@@ -1,0 +1,43 @@
+Goal: αρχική μελέτη του SOFIE και μετατροπή του σε k στάδια. 
+Πιθανά στάδια: Farm, transport (μεταφορική), αποθήκευση, Εργοστάσιο (process),
+package, retail, anial feeding etc. 
+Εφαρμογή στις ήδη υπάρχουσες αρχιτεκτονικές του paper του Βούλγαρη.
+
+Architecture 1: Public ledger. Every transaction is stored in a public ledger, 
+very expensive scenario in terms of cost and delay. 
+
+Architecure 2: One private ledger for all the stages and an anchor to a public ledger 
+for immutability.
+
+Architecure 3: Every pair of adjacent stages has a different private ledger and every one 
+anchors to a public ledger for immutability.
+
+Architecure 4: Every stage saves data to a private storage. Every transaction is signed by 
+both "stages" involved. The data of the transactions are stored to both stages involved. 
+Anchoring in a public ledger can also be used for immutability of the transactions. 
+
+My goal/idea: Specific private ledger for every stage, but eg. transport has only one. 
+this ledger can accept transactions from all the different stages, in some cases even 
+from the same (transport stage). Μaybe on top a consortium blockchain ledger with blocks 
+with the hash of the transactions/blocks from all the private ledgers per stages. Anchoring 
+is always important. 
+
+More specifically:
+
+The stage of farming has a private ledger that can implement transactions from all the 
+other stages. From farming there cam be, transport, storing, processing etc. The 
+private ledger can also be a consortium ledger for multiple organizations to test 
+and approve the transactions. 
+
+Transport for example, has a consortium ledger saves the appropriate data (θα οριστούν 
+αργότερα) and there can also be a transaction from transport to transport, through 
+different oraginzations/ vehicles etc. (θα μπορούσε να υπάρξει και μια στασιμότητα στη μεταφορά,
+για παράδειγμα στη μεταφορά μέσω πλοίων, αφήνει το container ένα φορτηγό, ο οδηγός 
+δεν ταξιδεύει και το παραλαμβάνει κάποιος άλλος οδηγός. Σε αυτή την περίπτωση δεν θα μπορεί 
+να μπεί υπογραφή και από τους δύο, πρέπει να γίνει σε δύο στάδια.)
+
+
+Planning the data?: per case, I believe is better. or ανά σοδειά πχ. κάθε σοδειά η οποία
+έχει συγκεκριμένες τιμές για θερμοκρασίες που πέρασαν, φυτοφάρμακα κτλ που χρησιμοποιήθηκαν 
+να έχει κάποιο συγκεκριμένο itemID και να έχει επίσης και το όνομα/ID του. μπορεί ένα 
+item να πάρει διάφορα ids ανα την φάση που περνάει. (ίδια σοδειά αλλα διαφορετικό φορτηγο πχ).
