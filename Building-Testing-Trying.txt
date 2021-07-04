@@ -1,7 +1,12 @@
 Goal: αρχική μελέτη του SOFIE και μετατροπή του σε k στάδια. 
 Πιθανά στάδια: Farm, transport (μεταφορική), αποθήκευση, Εργοστάσιο (process),
-package, retail, anial feeding etc. 
+package, retail, animal feeding etc. 
 Εφαρμογή στις ήδη υπάρχουσες αρχιτεκτονικές του paper του Βούλγαρη.
+
+###########################################
+
+Getting past transactions from a blockchain with the use of Block Explorer (tool or 
+online blockchain browser which reveals the data of individual blocks and transactions).
 
 Architecture 1: Public ledger. Every transaction is stored in a public ledger, 
 very expensive scenario in terms of cost and delay. 
@@ -15,6 +20,8 @@ anchors to a public ledger for immutability.
 Architecure 4: Every stage saves data to a private storage. Every transaction is signed by 
 both "stages" involved. The data of the transactions are stored to both stages involved. 
 Anchoring in a public ledger can also be used for immutability of the transactions. 
+
+###########################################
 
 My goal/idea: Specific private ledger for every stage, but eg. transport has only one. 
 this ledger can accept transactions from all the different stages, in some cases even 
@@ -41,3 +48,110 @@ Planning the data?: per case, I believe is better. or ανά σοδειά πχ. 
 έχει συγκεκριμένες τιμές για θερμοκρασίες που πέρασαν, φυτοφάρμακα κτλ που χρησιμοποιήθηκαν 
 να έχει κάποιο συγκεκριμένο itemID και να έχει επίσης και το όνομα/ID του. μπορεί ένα 
 item να πάρει διάφορα ids ανα την φάση που περνάει. (ίδια σοδειά αλλα διαφορετικό φορτηγο πχ).
+
+###########################################
+
+///////////////////
+     STATES:
+///////////////////
+
+1) Farm
+
+Data:   
+	pesticied used (text form? φυτοφάρμακα), 
+	farmer id, 
+	batch id, 
+	session id, 
+	sensor data,
+	timestamp
+
+2) Transport
+
+Data:   
+	driven id,
+	company name,
+	batch id,
+	session id,
+	previous stage person id (signed),
+	next stage person id (where are we headed),
+	sensor data,
+	timestamp
+
+3) Process
+
+Data:   
+	company name,
+	location,
+	batch id,
+	sensor id,
+	previous stage person id (signed),
+	manager for processing id (signed),
+	sensor data,
+	timestamp
+	
+4) Feeding farm
+
+Data:   
+	company name, 
+	location,
+	feeding process (signed),
+	feeder id,
+	animals id,
+	sensor data,
+	timestamp
+
+5) Packaging
+
+Data:   
+	company name,
+	location,
+	batch id, 
+	session id,
+	manager id (signed),
+	previous stage id (signed),
+	timestamp
+
+6) Retail (supermarkets, stores etc.)
+
+Data: 	
+	previous stage person id (signed),
+	batch id, 
+	session id,
+	received from id (signed),
+	timestamp
+	
+7) Storing
+
+Data:
+	previous stage person id (signed),
+	batch id,
+	session id,
+	receiver id,
+	location,
+	sensor data,
+	timestamp
+
+###########################################
+
+For item IDs we can use EPC (Electronic Product Code)
+The Electronic Product Code (EPC): example of a 96 bit EPC tag 
+(Adapted from Leong et al., 2005; Harrison et al, 2005)  
+Format of EPC: 
+**8bits Header + 8-35bits EPC Manager + 39-56bits Object Class + 60-95bits Serial Number**
+Header field: 
+The version number specifying the EPc format used by the tag.
+EPC Manager field:
+A unique number assigned by the EPCglobal to the company responsible for the product. 
+unique number accross the network.
+OBject Class:
+A unique number allocated to a specific product class produced by the company.
+Serial Number:
+A unique number assigned by the manufacturer (company) to every individual product
+
+###########################################
+
+Throughput checks must be done. Based on different architectures, public, private, 
+consortium, combination of those. eg in the architecture where everything is saved 
+and transactions are processed in a single public ledger there would be a great deal 
+of delay due to traffic from all the stages and from exogenous users sending 
+transactions on their own.
