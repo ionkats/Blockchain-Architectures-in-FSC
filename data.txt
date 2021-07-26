@@ -1,0 +1,16 @@
+DATA FOR CONTRACTS
+
+BEGIN SESSION
+SessionID (uint256)
+UserID(uint8 + uint32) (along with the organization id 8bits)
+previous state block hash (256)
+previous state ledger name (256)
+
+SENSOR DATA
+SessionID
+Information
+
+END SESSION
+SessionID (uint256)
+userID (uint8 + uint32)
+
