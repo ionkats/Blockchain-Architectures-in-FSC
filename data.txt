@@ -1,8 +1,8 @@
 DATA FOR CONTRACTS
 
-BEGIN SESSION
+START SESSION
 SessionID (uint256)
-UserID(uint8 + uint32) (along with the organization id 8bits)
+UserID(uint8 + uint32) (along with the organization is 8bits)
 previous state block hash (256)
 previous state ledger name (256)
 
@@ -14,3 +14,50 @@ END SESSION
 SessionID (uint256)
 userID (uint8 + uint32)
 
+gas required:
+
+Deployment: execution cost 513741 gas
+Start session: execution cost 70416 gas
+Sensor data: info:"information" 27941 gas
+             info: "34 C" 27857 gas
+             info: 6394 characters-> 199695 gas
+End Session: execution cost 14614 gas
+
+
+4294967295 is the max uint32 number
+Όριο για block gas: 15 million
+0x needs to be added to the hashed value for a valid bytes32 format
+
+EXAMPLES
+
+Έστω session με 4 sensors και αποθήκευση κάθε block (κάθε 15").
+Τότε ξεκινώντας session activation 70416
+    4 * sensor data = 111764 per block
+max 134.21 active sessions approx. can be ok with the transactions
+
+
+Έστω session με 4 sensors και αποθήκευση κάθε 10".
+Τότε ξεκινώντας session activation 70416
+    (4 + 2)* sensor data = 167646 mean gas per block 
+                            (3*4 sensor logs per 2 blocks)
+max 89.47 active sessions approx. can be ok with the transactions
+
+
+Έστω session με 4 sensors και αποθήκευση κάθε 5".
+Τότε ξεκινώντας session activation 70416
+    (3*4) * sensor data = 335292 gas per block 
+max 44.73 active sessions approx. can be ok with the transactions
+
+SCALABILITY:
+
+for 10 thousand sessions to be activated instantaniously with:
+average 4 sensors and data saving every 15" there needs to be
+74.04 --> 75 (10000/135) different private ledgers 
+without counting the 704 million gas values needed for the 
+activation of every session (not used at the same time)
+
+average 4 sensors and data saving every 10" there needs to be
+111.1 --> 112 (10000/90) different private ledgers 
+
+average 4 sensors and data saving every 5" there needs to be
+222.2 --> 223 (10000/45) different private ledgers 

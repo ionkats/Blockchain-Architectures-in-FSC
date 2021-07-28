@@ -4,10 +4,10 @@ contract StateAndSession {
 
     event StartOfSession(
         uint32 userID, 
-        uint256 previousStateBlockHash, 
+        bytes32 previousStateBlockHash, 
         uint256 sessionID,
         uint256 time,
-        uint256 peviousStateLedgerName
+        bytes32 peviousStateLedgerName
     );
 
     event sensorLog(
@@ -22,15 +22,15 @@ contract StateAndSession {
         uint256 time
     );
 
-    mapping(uint256 => bool) activeSessions;
-    uint256 sessionID;
+    mapping(uint256 => bool) public activeSessions;
+    uint256 public sessionID;
     // constructor() {
     // }
 
     function startSession(
-        uint32 _userID, 
-        uint256 _previousStateBlockHash, 
-        uint256 _previousStateLedgerName) 
+        uint32 _userID,
+        bytes32 _previousStateBlockHash, 
+        bytes32 _previousStateLedgerName) 
         external {
         emit StartOfSession(
             _userID, 
