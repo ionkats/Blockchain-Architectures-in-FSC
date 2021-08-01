@@ -2,7 +2,14 @@ DATA FOR CONTRACTS
 
 START SESSION
 SessionID (uint256)
-UserID(uint8 + uint32) (along with the organization is 8bits)
+UserID(uint32)
+previous state block hash (256)
+previous state ledger name (256)
+
+END AND START SESSION WITH HANDOFF 
+SessionID (uint256) (same session id from the previous state)
+NewUserID (uint32)
+PreviousUserID (uint32)
 previous state block hash (256)
 previous state ledger name (256)
 
@@ -12,16 +19,17 @@ Information
 
 END SESSION
 SessionID (uint256)
-userID (uint8 + uint32)
+userID (uint32)
 
 gas required:
 
-Deployment: execution cost 513741 gas
-Start session: execution cost 70416 gas
+Deployment: execution cost 716935 gas
+Start session: execution cost 70760 gas
+Handoff: execution cost 30407
 Sensor data: info:"information" 27941 gas
              info: "34 C" 27857 gas
              info: 6394 characters-> 199695 gas
-End Session: execution cost 14614 gas
+End Session: execution cost 14627 gas
 
 
 4294967295 is the max uint32 number
