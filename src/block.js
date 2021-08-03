@@ -21,10 +21,9 @@ class Block {
     mineNewBlock(difficulty) {
         while (this.blockHash.substring(0, difficulty) !== Array(difficulty + 1).join('0')) {
             this.nonce++;
-            this.hash = this.calculateHash();
+            this.blockHash = this.getHash();
         }
-      
-        debug(`Block mined: ${this.blockHash}`);
+        console.log(`Block mined: ${this.blockHash}`);
     }
 
 

@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 
-const session = 0;
-const activeSessions = [];
+var session = 0;
+var activeSessions = [];
 
 
 class Transaction {
@@ -9,6 +9,31 @@ class Transaction {
     constructor() {
         this.hasType = false;
         this.gasRequired = 0;
+    }
+
+    getTransactionHash(){
+        if (this.previousStateBlockHash !== undefined) {
+            // start session transaction
+            return crypto.createHash('sha256').update(this.sessionID + this.userIDID + this.previousStateBlockHash + this.previousStateLedgerName + this.timestamp).digest('hex');
+        }
+
+        if (this.userID !== undefined) {
+            // end session transaction
+            return crypto.createHash('sha256').update(this.sessionID + this.userID + this.timestamp).digest('hex');
+        }
+
+        if (this.information !== undefined) {
+            // sensor data transaction
+            return crypto.createHash('sha256').update(this.sessionID + this.information + this.timestamp).digest('hex');
+        }
+
+        if (this.newUserID !== undefined) {
+            // handoff session transaction
+            return crypto.createHash('sha256').update(this.sessionID + this.previousUserID + this.newUserID + this.previousStateBlockHash + this.previousStateLedgerName + this.timestamp).digest('hex');
+        }
+       
+        // mining transaction
+        return crypto.createHash('sha256').update(this.timestamp).digest('hex');
     }
 
     startSession(sessionID = 0, userID, previousStateBlockHash, previousStateLedgerName) {
@@ -70,6 +95,24 @@ class Transaction {
         this.hasType = true;
     }
 
+    signTransaction(signKey) {
+        if (this.userID !== undefined) {
+            if (signKey.getPublic('hex') !== this.userID) {
+                throw new Error('You cannot sign transactions with another userID.')
+            }
+        } else if (this.newUserID !== undefined) {
+            if (signKey.getPublic('hex') !== this.newUserID) {
+                throw new Error('You cannot sign transactions with another userID.')
+            }
+        } else {
+            // it is a mining transaction, the miner must sign it.
+        }
+
+        const transactionHash = this.getHash();
+        const signature = signKey.sign(transactionHash, 'base64');
+
+        this.signature = signature.toDER('hex');
+    }
 
     checkActiveSession(sessionID) {
         if (!activeSessions.includes(sessionID)) {
@@ -79,13 +122,30 @@ class Transaction {
     
 
     getNextSessionID() {
-        session++;
+        session += 1;
         return session;
     }
 
 
     isValid() {
-        return true
+        if (this.sessionID === undefined || this.information !== undefined) return true;
+
+        if (!this.signature || this.signature.length ===0) {
+            throw new Error('No signature in this transaction');
+        }
+
+        if (this.newUserID !== undefined) {
+            const publicKey = ec.keyFromPublic(this.newUserID, 'hex');
+            return publicKey.verify(this.getHash(), this.signature);
+        }
+
+        if (this.userID !== undefined) {
+            const publicKey = ec.keyFromPublic(this.userID, 'hex');
+            return publicKey.verify(this.getHash(), this.signature);
+        }
+        
+        console.log('Didn\'t get into any of the cases.')
+        return false
     }
 }
 
