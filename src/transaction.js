@@ -108,7 +108,7 @@ class Transaction {
             // it is a mining transaction, the miner must sign it.
         }
 
-        const transactionHash = this.getHash();
+        const transactionHash = this.getTransactionHash();
         const signature = signKey.sign(transactionHash, 'base64');
 
         this.signature = signature.toDER('hex');
