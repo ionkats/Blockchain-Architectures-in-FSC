@@ -6,7 +6,7 @@ const {Blockchain} = require('./blockchain');
 
 const privateKey = ec.keyFromPrivate('b5b4d99dabc9733ba8962910e58c3350c521f7657a161d8ea50de85671c7ab41');
 const publicKey = privateKey.getPublic('hex');
-
+console.log(privateKey);
 console.log("line 7");
 const ledger1 = new Blockchain("tryCoin");
 

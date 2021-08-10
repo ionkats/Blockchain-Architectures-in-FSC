@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const EC = require('elliptic').ec;
+const ec = new EC('secp256k1'); // elliptic curve used in ethereum
 
 var session = 0;
 var activeSessions = [];
@@ -12,28 +14,28 @@ class Transaction {
     }
 
     getTransactionHash(){
-        if (this.previousStateBlockHash !== undefined) {
+        if (!(this.previousStateBlockHash === undefined)) {
             // start session transaction
-            return crypto.createHash('sha256').update(this.sessionID + this.userIDID + this.previousStateBlockHash + this.previousStateLedgerName + this.timestamp).digest('hex');
+            return crypto.createHash('sha256').update(String(this.sessionID) + String(this.userIDID) + String(this.previousStateBlockHash) + String(this.previousStateLedgerName) + String(this.timestamp)).digest('hex');
         }
 
         if (this.userID !== undefined) {
             // end session transaction
-            return crypto.createHash('sha256').update(this.sessionID + this.userID + this.timestamp).digest('hex');
+            return crypto.createHash('sha256').update(String(this.sessionID) + String(this.userID) + String(this.timestamp)).digest('hex');
         }
 
         if (this.information !== undefined) {
             // sensor data transaction
-            return crypto.createHash('sha256').update(this.sessionID + this.information + this.timestamp).digest('hex');
+            return crypto.createHash('sha256').update(String(this.sessionID) + String(this.information) + String(this.timestamp)).digest('hex');
         }
 
         if (this.newUserID !== undefined) {
             // handoff session transaction
-            return crypto.createHash('sha256').update(this.sessionID + this.previousUserID + this.newUserID + this.previousStateBlockHash + this.previousStateLedgerName + this.timestamp).digest('hex');
+            return crypto.createHash('sha256').update(String(this.sessionID) + String(this.previousUserID) + String(this.newUserID) + String(this.previousStateBlockHash) + String(this.previousStateLedgerName) + String(this.timestamp)).digest('hex');
         }
        
         // mining transaction
-        return crypto.createHash('sha256').update(this.timestamp).digest('hex');
+        return crypto.createHash('sha256').update(String(this.timestamp)).digest('hex');
     }
 
     startSession(sessionID = 0, userID, previousStateBlockHash, previousStateLedgerName) {
@@ -141,7 +143,7 @@ class Transaction {
 
         if (this.userID !== undefined) {
             const publicKey = ec.keyFromPublic(this.userID, 'hex');
-            return publicKey.verify(this.getHash(), this.signature);
+            return publicKey.verify(this.getTransactionHash(), this.signature);
         }
         
         console.log('Didn\'t get into any of the cases.')
