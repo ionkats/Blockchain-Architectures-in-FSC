@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>State</title>
+</head>
+<body>
+    <div class="main">
+        <div>
+            <button id="newSession" class="transaction"> New Session </button>
+            <input type="text" id="newSession-sessionId" placeholder="Session ID"> 
+            <input type="text" id="newSession-userId" placeholder="User ID"> 
+            <input type="text" id="newSession-previousStateBlockHash" placeholder="Previous State Block Hash"> 
+            <input type="text" id="newSession-previousStateLedgerName" placeholder="Previous State Ledger Name"> 
+        </div>
+        <div>
+            <button id="Handoff" class="transaction"> Handoff Transaction </button>
+            <input type="text" id="Handoff-sessionId" placeholder="Session ID">
+            <input type="text" id="Handoff-newUserId" placeholder="New User ID">
+            <input type="text" id="Handoff-previousUserId" placeholder="Previous User ID">
+            <input type="text" id="Handoff-previousStateBlockHash" placeholder="Previous State Block Hash">
+            <input type="text" id="Handoff-previousStateLedgerName" placeholder="Previous State Ledger Name">
+        </div>
+        <div>
+            <button id="endSession" class="transaction"> End Session  </button>
+            <input type="text" id="endSession-sessionId" placeholder="Session ID">
+            <input type="text" id="endSession-userId" placeholder="User ID">
+        </div>
+        <div>
+            <button id="Sensor" class="transaction"> Sensor Data </button>
+            <input type="text" id="Sensor-sessionId" placeholder="Session ID">
+            <input type="text" id="Sensor-information" placeholder="Information">
+    </div>
+    </div>
+
+    <!-- so we can use web3js -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.3.1/dist/web3.min.js"></script>
+
+    <!--so you can make imports -->
+    <script src="farm.js" type="module"></script>
+</body>
+</html>
