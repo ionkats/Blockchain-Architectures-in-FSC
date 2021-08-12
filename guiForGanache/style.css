@@ -14,10 +14,14 @@ body {
 }
 
 .field-group input {
-    font-size: 14pt;
+    font-size: 11pt;
     display: inline-block;
-    max-width: 4em;
+    max-width: 1em;
     vertical-align: middle;
     text-align: right;
     margin-right: 1em;
 }
+
+.column {
+    float: left;
+    }

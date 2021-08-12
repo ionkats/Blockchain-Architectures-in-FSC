@@ -1,27 +1,77 @@
-import contractAbi from "./ABI.js"
-
+import contractAbi from "./ABI.js";
+console.log("YEE");
 let contractAddress;
 let contract;
-let userId = '';
-window.web3 = new Web3(ethereum);
-windows.contract = contract = new web3.methods.contract(contractAbi, contractAddress);
-localStorage.setItem('contractAddress', contractAddress);
+// window.web3 = new Web3(ethereum);
+// windows.contract = contract = new web3.methods.contract(contractAbi, contractAddress);
+// localStorage.setItem('contractAddress', contractAddress);
 
+const contractAddressButton = document.getElementById("contract-address");
 const startSessionButton = document.getElementById("newSession");
 const endSessionButton = document.getElementById("endSession");
 const HandoffButton = document.getElementById("Handoff");
 const sensorButton = document.getElementById("Sensor");
 
 
+// See https://eips.ethereum.org/EIPS/eip-1102#eth_requestaccounts
+// and https://eips.ethereum.org/EIPS/eip-1193#request-1
+async function initEthereum () {
+    if (window.ethereum) {
+        window.web3 = new Web3(ethereum);
+        try {
+            oneAddress = (await ethereum.request({ method: 'eth_requestAccounts' }))[0];
+            // oneAddress = web3.utils.toChecksumAddress(playerAddress); // properly capitalize https://github.com/MetaMask/metamask-extension/issues/5826
+        } catch (e) {
+            console.error(e)
+            alert("No ethereum account provided.")
+        }
+        // document.getElementById("Account").value = playerAddress;
+    } else {
+        alert("No Ethereum provider (eg MetaMask) detected.");
+    }
+}
+initEthereum()
+
+
+function listenAllEvents() {
+    contract.events.StartOfSession(makeRelevantEventHandler(transactionEvent))
+    contract.events.SensorLog(makeRelevantEventHandler(transactionEvent))
+    contract.events.EndOfSession(makeRelevantEventHandler(transactionEvent))
+    contract.events.Handoff(makeRelevantEventHandler(transactionEvent))
+}
+
+
+async function transactionEvent() {
+
+}
+
+
+async function connect() {
+    contractAddress = document.getElementById("contract-address-input").value;
+    if (!contractAddress) {
+        return;
+    }
+    window.contract = contract = new  web3.eth.Contract(contractAbi, contractAddress);
+    localStorage.setItem('contractAddress', contractAddress);
+
+    listenAllEvents();
+}
+
+
 function addUiListeners() {
     // specified transactions
+    contractAddressButton.addEventListener("click", getContractAddress);
     startSessionButton.addEventListener("click", startTransaction);
     endSessionButton.addEventListener("click", endTransaction);
     HandoffButton.addEventListener("click", handOffTransaction);
     sensorButton.addEventListener("click", sensorTransaction);
-
 }
 addUiListeners();
+
+
+async function getContractAddress() {
+    var contractAddress = document.getElementById("contract-address-input");
+}
 
 
 async function startTransaction() {
