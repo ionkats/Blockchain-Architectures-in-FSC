@@ -1,15 +1,20 @@
 import contractABI from "./ABI.js";
+
+// put the address of the deployed smart contract here
 let smartContractAddress = "0x812bB35f555a37c3895Cf563DDAEF071dCa5f193";
 
+// connect the transaction buttons
 const startSessionButton = document.getElementById("newSession-button");
 const endSessionButton = document.getElementById("endSession-button");
 const HandoffButton = document.getElementById("Handoff-button");
 const sensorButton = document.getElementById("Sensor-button");
 
+// address of the server
 const web3 = new Web3 ("ws://localhost:7545");
+// create the object of the smart contract
 const smartContract = new web3.eth.Contract(contractABI, smartContractAddress);
+// put the address of a specified sender for the transactions
 const senderAddress = "0x4F55a64D52c11B003415524c9a05ce812386FE5B";
-
 
 let activeSessions = [];
 let numberOfActiveSessions;
@@ -23,8 +28,6 @@ let transactionData = [];
 // var i = queue.shift(); // queue is now [5]
 // alert(i);
 
-listenAllEvents();
-
 
 function listenAllEvents() {
     smartContract.events.StartOfSession(specifiedEventHandler(startSessionEvent));
@@ -32,6 +35,7 @@ function listenAllEvents() {
     smartContract.events.SensorLog(specifiedEventHandler(sensorLogEvent));
     smartContract.events.EndOfSession(specifiedEventHandler(endSessionEvent));
 }
+listenAllEvents();
 
 
 function specifiedEventHandler(handler) {
@@ -61,7 +65,7 @@ async function sensorLogEvent(values) {
     //do nothing?
 }
 
-async function endSessionEvent(result) {    
+async function endSessionEvent(values) {    
     activeSessions.remove(values.sessionID);
     numberOfActiveSessions -= 1;
 }
@@ -77,6 +81,7 @@ function addUiListeners() {
 addUiListeners();
 
 
+//maybe for later, input the smart contract address through the UI
 async function getContractAddress() {
     var contractAddress = document.getElementById("contract-address-input");
     isEmpty(contractAddress);
@@ -84,6 +89,7 @@ async function getContractAddress() {
 }
 
 
+// needs debugging
 function isEmpty(item) {
     if (item === null) {
         throw new Error("Empty Item on input");
@@ -92,15 +98,17 @@ function isEmpty(item) {
 
 
 async function startTransaction() {
+    // get values from input blocks of the UI
     var _userId = document.getElementById("newSession-userId").value;
     var _previousStateBlockHash = document.getElementById("newSession-previousStateBlockHash").value;
     var _previousStateLedgerName = document.getElementById("newSession-previousStateLedgerName").value;
-    
+
     isEmpty(_userId);
     isEmpty(_previousStateBlockHash);
     isEmpty(_previousStateLedgerName);
 
     try {
+        // call the function from the smart contract
         startTransaction = smartContract.methods.startSession(
             _userId,
             _previousStateBlockHash,
@@ -111,13 +119,16 @@ async function startTransaction() {
         alert(e.message);
     }
 
+    // resets values to the placeholders
     document.getElementById("newSession-userId").value = "";
     document.getElementById("newSession-previousStateBlockHash").value = "";
     document.getElementById("newSession-previousStateLedgerName").value = "";
 }
 
 
+// on click, called for the handoff of a session to a different state
 async function handOffTransaction() {
+    // get values from input blocks of the UI
     var _session = document.getElementById("Handoff-sessionId").value;  
     var _previousUserId = document.getElementById("Handoff-previousUserId").value;
     var _newuserId = document.getElementById("Handoff-newUserId").value;
@@ -131,6 +142,7 @@ async function handOffTransaction() {
     isEmpty(_previousStateLedgerName);
 
     try {
+        // call the function from the smart contract
         handOffTransaction = smartContract.methods.handoff(
             _session,
             _previousUserId,
@@ -143,6 +155,7 @@ async function handOffTransaction() {
         alert(e.message);
     }
 
+    // resets values to the placeholders
     document.getElementById("Handoff-sessionId").value = "";  
     document.getElementById("Handoff-previousUserId").value = "";
     document.getElementById("Handoff-newUserId").value = "";
@@ -151,7 +164,9 @@ async function handOffTransaction() {
 }
 
 
+// on click, called for the log of sensor values on the chain
 async function sensorTransaction() {
+    // get values from input blocks of the UI
     var _session = document.getElementById("Sensor-sessionId").value;  
     var _information = document.getElementById("Sensor-information").value;
     
@@ -159,6 +174,7 @@ async function sensorTransaction() {
     isEmpty(_information);
 
     try {
+        // call the function from the smart contract
         sensorTransaction = smartContract.methods.sensorLogging(
             _session,
             _information
@@ -168,12 +184,15 @@ async function sensorTransaction() {
         alert(e.message);
     }
 
+    // resets values to the placeholders
     document.getElementById("Sensor-sessionId").value = ""; 
     document.getElementById("Sensor-information").value = ""; 
 }
 
 
+// on click, called for the end of a session
 async function endTransaction() {
+    // get values from input blocks of the UI
     var _session = document.getElementById("endSession-sessionId").value;  
     var _userId = document.getElementById("endSession-userId").value;
 
@@ -181,6 +200,7 @@ async function endTransaction() {
     isEmpty(_userId);
 
     try {
+        // call the function from the smart contract
         endTransaction = smartContract.methods.endSession(
             _session,
             _userId
@@ -190,6 +210,7 @@ async function endTransaction() {
         alert(e.message);
     }
 
+    // resets values to the placeholders
     document.getElementById("endSession-sessionId").value = "";
     document.getElementById("endSession-userId").value = "";
 }
