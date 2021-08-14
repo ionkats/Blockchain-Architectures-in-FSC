@@ -100,8 +100,9 @@ async function startTransaction() {
                                                     console.log("Session "+ _sessionID + " Activated.");
                                                     sessionToBlockHash[String[_sessionID]] = [receipt.blockHash]; 
                                                     sessionToUserID[String[_sessionID]] = userID;
+                                                    // initialize the sensors for this session
+                                                    initializeSensors(_sessionID);
                                                 });
-        initializeSensors();
     } catch (e) {
         console.error(e);
         alert(e.message);
@@ -164,15 +165,20 @@ async function endTransaction() {
         alert(e.message);
     }
 
+    // stop the logging of sensors for this session
+    eval('clearInterval(window.session' + _sessionID + ');');
+    console.log("interval session" + _sessionID + " cleared.");
+
+    // reset value to the placeholder
     document.getElementById("endSession-sessionId").value = "";
 }
 
 
- async function sensorTransaction(_sessionID) {
+async function sensorTransaction(_sessionID) {
     var information = String(Math.random(98) + 1) + "C";
     try {
         // call the function from the smart contract
-        sensorTransaction = smartContract.methods.sensorLogging(
+        var sensorTransaction = smartContract.methods.sensorLogging(
             _sessionID,
             information)
             .send({from: senderAddress});
@@ -180,6 +186,9 @@ async function endTransaction() {
         console.error(e);
         alert(e.message);
     }
+
+    console.log("included sensor transaction");
+
 }
 
 
@@ -188,6 +197,9 @@ function createUserID() {
 }
 
 
-function initializeSensors() {
-    
+async function initializeSensors(_sessionID) {
+    console.log("Initialize interval for session" + _sessionID + ".");
+    // repeat the interval session1, session2, etc very 5000milsec = 5sec.
+    //window.variableName saves a global variable with dynamic naming for clearing the interval from another function
+    eval('window.session' + _sessionID + ' = ' + setInterval(function() { sensorTransaction(_sessionID); }, 5000) + ';');
 }
