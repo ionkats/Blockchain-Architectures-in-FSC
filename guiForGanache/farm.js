@@ -113,7 +113,7 @@ async function startTransaction() {
         alert(e.message);
     }
 
-    // resets values to the placeholders
+    // reset values to the placeholders
     document.getElementById("newSession-userId").value = "";
 }
 
@@ -176,7 +176,7 @@ async function sensorTransaction() {
         alert(e.message);
     }
 
-    // resets values to the placeholders
+    // reset values to the placeholders
     document.getElementById("Sensor-sessionId").value = ""; 
     document.getElementById("Sensor-information").value = ""; 
 }
@@ -202,7 +202,7 @@ async function endTransaction() {
         alert(e.message);
     }
 
-    // resets values to the placeholders
+    // reset values to the placeholders
     document.getElementById("endSession-sessionId").value = "";
     document.getElementById("endSession-userId").value = "";
 }
