@@ -100,19 +100,13 @@ function isEmpty(item) {
 async function startTransaction() {
     // get values from input blocks of the UI
     var _userId = document.getElementById("newSession-userId").value;
-    var _previousStateBlockHash = document.getElementById("newSession-previousStateBlockHash").value;
-    var _previousStateLedgerName = document.getElementById("newSession-previousStateLedgerName").value;
 
     isEmpty(_userId);
-    isEmpty(_previousStateBlockHash);
-    isEmpty(_previousStateLedgerName);
 
     try {
         // call the function from the smart contract
         startTransaction = smartContract.methods.startSession(
             _userId,
-            _previousStateBlockHash,
-            _previousStateLedgerName
             ).send({from: senderAddress});
     } catch (e) {
         console.error(e);
@@ -121,8 +115,6 @@ async function startTransaction() {
 
     // resets values to the placeholders
     document.getElementById("newSession-userId").value = "";
-    document.getElementById("newSession-previousStateBlockHash").value = "";
-    document.getElementById("newSession-previousStateLedgerName").value = "";
 }
 
 

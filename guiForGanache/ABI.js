@@ -109,18 +109,6 @@ export default [
 			},
 			{
 				"indexed": false,
-				"internalType": "bytes32",
-				"name": "previousStateBlockHash",
-				"type": "bytes32"
-			},
-			{
-				"indexed": false,
-				"internalType": "bytes32",
-				"name": "previousStateLedgerName",
-				"type": "bytes32"
-			},
-			{
-				"indexed": false,
 				"internalType": "uint256",
 				"name": "time",
 				"type": "uint256"
@@ -236,16 +224,6 @@ export default [
 				"internalType": "uint32",
 				"name": "_userID",
 				"type": "uint32"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "_previousStateBlockHash",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "_previousStateLedgerName",
-				"type": "bytes32"
 			}
 		],
 		"name": "startSession",

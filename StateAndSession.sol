@@ -5,8 +5,6 @@ contract StateAndSession {
     event StartOfSession(
         uint256 sessionID,
         uint32 userID, 
-        bytes32 previousStateBlockHash, 
-        bytes32 previousStateLedgerName,
         uint256 time
     );
 
@@ -35,15 +33,11 @@ contract StateAndSession {
     uint256 public sessionID;
 
     function startSession(
-        uint32 _userID,
-        bytes32 _previousStateBlockHash, 
-        bytes32 _previousStateLedgerName
+        uint32 _userID
         ) external {
             emit StartOfSession(
                 getNextSessionID(),
                 _userID, 
-                _previousStateBlockHash,
-                _previousStateLedgerName,
                 block.timestamp
             );
             activeSessions[sessionID] = true;
