@@ -8,6 +8,7 @@ const startSessionButton = document.getElementById("newSession-button");
 const endSessionButton = document.getElementById("endSession-button");
 const HandoffButton = document.getElementById("Handoff-button");
 const sensorButton = document.getElementById("Sensor-button");
+const tracebackButton = document.getElementById("Traceback-button");
 
 // address of the server
 const web3 = new Web3 ("ws://localhost:7545");
@@ -79,6 +80,7 @@ function addUiListeners() {
     endSessionButton.addEventListener("click", endTransaction);
     HandoffButton.addEventListener("click", handOffTransaction);
     sensorButton.addEventListener("click", sensorTransaction);
+    tracebackButton.addEventListener("click", traceback);
 }
 addUiListeners();
 
@@ -158,7 +160,7 @@ async function endTransaction() {
             ).send({from: senderAddress})
             .on('receipt', function(receipt) {
                 console.log("Session "+ _sessionID + " Ended.")
-                sessionToBlockHash[_sessionID].push(receipt.blockHash);
+                sessionToBlockHash[String[_sessionID]].push(receipt.blockHash);
             });
     } catch (e) {
         console.error(e);
@@ -202,4 +204,33 @@ async function initializeSensors(_sessionID) {
     // repeat the interval session1, session2, etc very 5000milsec = 5sec.
     //window.variableName saves a global variable with dynamic naming for clearing the interval from another function
     eval('window.session' + _sessionID + ' = ' + setInterval(function() { sensorTransaction(_sessionID); }, 5000) + ';');
+}
+
+
+async function traceback(_sessionID) {
+    var _sessionID = document.getElementById("Traceback-sessionId").value;
+    var lengthOfStates = sessionToBlockHash[String[_sessionID]].length;
+    console.log("Number of states of session is " + lengthOfStates);
+    var blockHashOfTransaction = sessionToBlockHash[String[_sessionID]][lengthOfStates - 1];
+    // var receipt =  web3.eth.getTransactionReceipt("transactionHash").then(console.log);
+    var errorNotOccured = true;
+    var indexOfTransactionOnBlock=0;
+
+    while (errorNotOccured) {
+        try {
+            var transaction = web3.eth.getTransactionFromBlock(blockHashOfTransaction, indexOfTransactionOnBlock).then(console.log);
+            console.log(transaction);    
+            var receipt =  web3.eth.getTransactionReceipt(transaction.hash).then(console.log);
+            console.log(receipt);
+            indexOfTransactionOnBlock++;
+            errorNotOccured = false;
+        } catch (e) {
+            console.error(e);
+            alert(e.message);
+            errorNotOccured = false;
+        }
+    }
+
+    // reset value to the placeholder
+    document.getElementById("endSession-sessionId").value = "";
 }
