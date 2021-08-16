@@ -1,4 +1,4 @@
-import contractABI from "../ABI.js";
+import contractABI from "./ABI.js";
 
 // put the address of the deployed smart contract here
 var smartContractAddress = "0xfe3fc1f0FdAAB4CE1A1e47e49E9a563eee42E073";
@@ -125,7 +125,9 @@ async function handOffTransaction() {
     var hashArray = sessionToBlockHash[String[_sessionID]];
     var previousBlockHash = hashArray[hashArray.length - 1]; 
     try {
-        
+        if (!(activeSessions.includes(_sessionID))){
+            break;
+        }
         // call the function from the smart contract
         handOffTransaction = smartContract.methods.handoff(
             _sessionID,
@@ -154,23 +156,21 @@ async function endTransaction() {
 
     try {
         // call the function from the smart contract
-        endTransaction = smartContract.methods.endSession(
-            _sessionID,
-            userID
-            ).send({from: senderAddress})
-            .on('receipt', function(receipt) {
-                console.log("Session "+ _sessionID + " Ended.")
-                sessionToBlockHash[String[_sessionID]].push(receipt.blockHash);
-            });
+        endTransaction = smartContract.methods.endSession(_sessionID, userID)
+                                            .send({from: senderAddress})
+                                            .on('receipt', function(receipt) {
+                                                console.log("Session "+ _sessionID + " Ended.")
+                                                sessionToBlockHash[String[_sessionID]].push(receipt.blockHash);
+                                            });
+
+        // stop the logging of sensors for this session
+        eval('clearInterval(window.session' + _sessionID + ');');
+        console.log("interval session" + _sessionID + " cleared.");
     } catch (e) {
         console.error(e);
         alert(e.message);
     }
-
-    // stop the logging of sensors for this session
-    eval('clearInterval(window.session' + _sessionID + ');');
-    console.log("interval session" + _sessionID + " cleared.");
-
+    
     // reset value to the placeholder
     document.getElementById("endSession-sessionId").value = "";
 }
@@ -184,13 +184,12 @@ async function sensorTransaction(_sessionID) {
             _sessionID,
             information)
             .send({from: senderAddress});
+
+        console.log("included sensor transaction");
     } catch (e) {
         console.error(e);
         alert(e.message);
     }
-
-    console.log("included sensor transaction");
-
 }
 
 
@@ -209,19 +208,23 @@ async function initializeSensors(_sessionID) {
 
 async function traceback(_sessionID) {
     var _sessionID = document.getElementById("Traceback-sessionId").value;
+    
     var lengthOfStates = sessionToBlockHash[String[_sessionID]].length;
     console.log("Number of states of session is " + lengthOfStates);
     var blockHashOfTransaction = sessionToBlockHash[String[_sessionID]][lengthOfStates - 1];
     // var receipt =  web3.eth.getTransactionReceipt("transactionHash").then(console.log);
+    var block = web3.eth.getBlock(blockHashOfTransaction).then(console.log);
+    console.log(block.transactions);
+    // var numberOfTransactions = block.transactions.length;
     var errorNotOccured = true;
     var indexOfTransactionOnBlock=0;
 
     while (errorNotOccured) {
         try {
             var transaction = web3.eth.getTransactionFromBlock(blockHashOfTransaction, indexOfTransactionOnBlock).then(console.log);
-            console.log(transaction);    
+            // console.log(transaction);    
             var receipt =  web3.eth.getTransactionReceipt(transaction.hash).then(console.log);
-            console.log(receipt);
+            // console.log(receipt);
             indexOfTransactionOnBlock++;
             errorNotOccured = false;
         } catch (e) {
