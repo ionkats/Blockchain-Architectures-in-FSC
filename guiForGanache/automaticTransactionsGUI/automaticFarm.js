@@ -22,7 +22,7 @@ var activeSessions = [];
 var sessionToUserID = {} // key: sessionID, value: current UserID for sanity checks of handoffs
 var numberOfActiveSessions;
 var sessionToBlockHash = {}; // dictionary key:sessionID, value: previous block hash that it passed
-// a queue of transaction data
+// a queue of transaction data for the traceback
 var transactionData = [];
 
 
@@ -43,7 +43,7 @@ function specifiedEventHandler(handler) {
         }
     
         const values = result.returnValues;
-        transactionData.push(values);
+        // transactionData.push(values);
         handler(values);
         // console.log(transactionData);
     }
@@ -51,6 +51,7 @@ function specifiedEventHandler(handler) {
 
 
 async function startSessionEvent(values) {
+    transactionData.push(values);
     activeSessions.push(values.sessionID);
     numberOfActiveSessions += 1;
     // console.log(activeSessions);
@@ -58,6 +59,7 @@ async function startSessionEvent(values) {
 
 
 async function handoffEvent(values) {
+    transactionData.push(values);
     // sessionToBlockHash[values.sessionID].push(values.previousStateBlockHash);
 }
 
@@ -68,6 +70,7 @@ async function sensorLogEvent(values) {
 
 
 async function endSessionEvent(values) {    
+    transactionData.push(values);
     var sessionIndex = activeSessions.indexOf(values.sessionID);
     activeSessions.splice(sessionIndex, 1);
     numberOfActiveSessions -= 1;
@@ -125,9 +128,9 @@ async function handOffTransaction() {
     var hashArray = sessionToBlockHash[String[_sessionID]];
     var previousBlockHash = hashArray[hashArray.length - 1]; 
     try {
-        if (!(activeSessions.includes(_sessionID))){
-            break;
-        }
+        // if (!(activeSessions.includes(_sessionID))){
+        //     break;
+        // }
         // call the function from the smart contract
         handOffTransaction = smartContract.methods.handoff(
             _sessionID,
@@ -209,31 +212,43 @@ async function initializeSensors(_sessionID) {
 async function traceback(_sessionID) {
     var _sessionID = document.getElementById("Traceback-sessionId").value;
     
-    var lengthOfStates = sessionToBlockHash[String[_sessionID]].length;
-    console.log("Number of states of session is " + lengthOfStates);
-    var blockHashOfTransaction = sessionToBlockHash[String[_sessionID]][lengthOfStates - 1];
-    // var receipt =  web3.eth.getTransactionReceipt("transactionHash").then(console.log);
-    var block = web3.eth.getBlock(blockHashOfTransaction).then(console.log);
-    console.log(block.transactions);
-    // var numberOfTransactions = block.transactions.length;
-    var errorNotOccured = true;
-    var indexOfTransactionOnBlock=0;
-
-    while (errorNotOccured) {
-        try {
-            var transaction = web3.eth.getTransactionFromBlock(blockHashOfTransaction, indexOfTransactionOnBlock).then(console.log);
-            // console.log(transaction);    
-            var receipt =  web3.eth.getTransactionReceipt(transaction.hash).then(console.log);
-            // console.log(receipt);
-            indexOfTransactionOnBlock++;
-            errorNotOccured = false;
-        } catch (e) {
-            console.error(e);
-            alert(e.message);
-            errorNotOccured = false;
+    var tracebackData = [];
+    for (let i = 0; i < transactionData.length; i++) {
+        if (transactionData[i].sessionID === _sessionID) {
+            // add this event data to the end of the list
+            tracebackData.push(transactionData[i]);
         }
     }
 
-    // reset value to the placeholder
-    document.getElementById("endSession-sessionId").value = "";
+    console.log("The events for " + _sessionID + " are:");
+    console.log(tracebackData);
+
+
+    // var lengthOfStates = sessionToBlockHash[String[_sessionID]].length;
+    // console.log("Number of states of session is " + lengthOfStates);
+    // var blockHashOfTransaction = sessionToBlockHash[String[_sessionID]][lengthOfStates - 1];
+    // // var receipt =  web3.eth.getTransactionReceipt("transactionHash").then(console.log);
+    // var block = web3.eth.getBlock(blockHashOfTransaction).then(console.log);
+    // console.log(block.transactions);
+    // // var numberOfTransactions = block.transactions.length;
+    // var errorNotOccured = true;
+    // var indexOfTransactionOnBlock=0;
+
+    // while (errorNotOccured) {
+    //     try {
+    //         var transaction = web3.eth.getTransactionFromBlock(blockHashOfTransaction, indexOfTransactionOnBlock).then(console.log);
+    //         // console.log(transaction);    
+    //         var receipt =  web3.eth.getTransactionReceipt(transaction.hash).then(console.log);
+    //         // console.log(receipt);
+    //         indexOfTransactionOnBlock++;
+    //         errorNotOccured = false;
+    //     } catch (e) {
+    //         console.error(e);
+    //         alert(e.message);
+    //         errorNotOccured = false;
+    //     }
+    // }
+
+    // // reset value to the placeholder
+    // document.getElementById("endSession-sessionId").value = "";
 }
