@@ -51,6 +51,7 @@ function specifiedEventHandler(handler) {
 
 
 async function startSessionEvent(values) {
+    values["nameOfEvent"] = "startSession"; 
     transactionData.push(values);
     activeSessions.push(values.sessionID);
     numberOfActiveSessions += 1;
@@ -59,6 +60,7 @@ async function startSessionEvent(values) {
 
 
 async function handoffEvent(values) {
+    values["nameOfEvent"] = "handoff"; 
     transactionData.push(values);
     // sessionToBlockHash[values.sessionID].push(values.previousStateBlockHash);
 }
@@ -70,6 +72,7 @@ async function sensorLogEvent(values) {
 
 
 async function endSessionEvent(values) {    
+    values["nameOfEvent"] = "endSession"; 
     transactionData.push(values);
     var sessionIndex = activeSessions.indexOf(values.sessionID);
     activeSessions.splice(sessionIndex, 1);
