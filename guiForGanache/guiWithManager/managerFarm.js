@@ -105,6 +105,7 @@ async function startTransaction() {
     // get the address and the smart contract object of the proper chain
     var smartContract = smartContractObjects[chainNumber];
     var senderAddress = userAddresses[chainNumber];
+
     try {
         // call the function from the smart contract
         startTransaction = smartContract.methods.startSession(userID)
@@ -142,20 +143,56 @@ async function handOffTransaction() {
     var hashArray = sessionToBlockHash[String[_sessionID]];
     var previousBlockHash = hashArray[hashArray.length - 1]; 
     var previousUserID = sessionToUserID[String[_sessionID]];
+
+    // the chain number from the previous userID
+    var previousChainNumber = userToChainNumber(previousUserID);
+    console.log("Send to server: " + previousChainNumber + " from previous user: " + previousUserID);
+
+    // get the address and the smart contract object of the proper chain from the previous user
+    var previousSmartContract = smartContractObjects[previousChainNumber];
+    var previousSenderAddress = userAddresses[previousChainNumber];
+
+    // the chain number from the new userID
+    var newChainNumber = userToChainNumber(_userID);
+    console.log("Send to server: " + newChainNumber + " from new user: " + _userID);
+
+    // get the address and the smart contract object of the proper chain from the previous user
+    var newSmartContract = smartContractObjects[newChainNumber];
+    var newSenderAddress = userAddresses[newChainNumber];
+
     try {
-        // call the function from the smart contract
-        handOffTransaction = smartContract.methods.handoff(
+        // call the function from the smart contract for the previous user
+        handOffTransaction = previousSmartContract.methods.handoff(
                                                 _sessionID,
                                                 previousUserID, // previous userID
                                                 _userID, // new userID
                                                 previousBlockHash,
                                                 previousBlockHash // currently for the previous ledger name
-                                                ).send({from: senderAddress})
+                                                ).send({from: previousSenderAddress})
                                                 .on('receipt', function(receipt) {
-                                                    console.log("Session "+ _sessionID + " Handed off.");
+                                                    console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User chain)");
                                                     sessionToBlockHash[String[_sessionID]].push(receipt.blockHash); // same previous block hash
                                                     sessionToUserID[String[_sessionID]] = _userID; // save new userID
                                                 });
+        // stop the logging of sensors for this session
+        eval('clearInterval(window.session' + _sessionID + ');');
+        console.log("interval session" + _sessionID + " cleared from chain " + previousChainNumber);
+
+        // call the function from the smart contract for the new user
+        handOffTransaction = newSmartContract.methods.handoff(
+                                                _sessionID,
+                                                previousUserID, // previous userID
+                                                _userID, // new userID
+                                                previousBlockHash,
+                                                previousBlockHash // currently for the previous ledger name
+                                                ).send({from: newSenderAddress})
+                                                .on('receipt', function(receipt) {
+                                                    console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User chain)");
+                                                    sessionToBlockHash[String[_sessionID]].push(receipt.blockHash); // same previous block hash
+                                                    sessionToUserID[String[_sessionID]] = _userID; // save new userID
+                                                    sessionToChain[String[_sessionID]] = newChainNumber; // save the number of the chain saved last
+                                                });
+        initializeSensors(_sessionID);
     } catch (e) {
         console.error(e);
         alert(e.message);
