@@ -97,14 +97,11 @@ addUiListeners();
 async function startTransaction() {
     // from this point forward to call the sensor transaction 
     // every 5 sec to be to the queue of pending transactions
-    var userID = createUserID();
-    // match the first digit of the userID to the chain for the transactions to be send
-    var firstDigit = Number(String(userID).charAt(0));
 
-    // I want a function f: [9] -> [#servers] => f(x) = floor[x / (10/#servers)] with a max amount of servers of 10           
-    // e.g. for 2 servers f(4) = 4/5 = floor(0.8) = 0, f(5) = 1 => {0,1,2,3,4}->0, {5,6,7,8,9}->1
-    //      for 3 servers f(3) = fl(3/3.33) = 0, f(4) = 4/3.33 = 1, f(7) = 7/3.33 = 2 => {0,1,2,3}->0, {4,5,6}->1, {7,8,9}->2
-    var chainNumber = Math.floor((firstDigit) / (10/numberOfServers));
+    var userID = createUserID();
+
+    // the the chain number from the userID
+    var chainNumber = userToChainNumber(userID);
     console.log("Send to server: " + chainNumber + " from user: " + userID);
 
     // change appropriately with the amount of servers are opened
@@ -238,4 +235,25 @@ async function traceback(_sessionID) {
     console.log("The events for " + _sessionID + " are:");
     console.log(tracebackData);
 
+}
+
+
+// I want a function f: [9] -> [#servers] => f(x) = floor[x / (10/#servers)] with a max amount of servers of 10           
+// e.g. for 2 servers f(4) = 4/5 = floor(0.8) = 0, f(5) = 1 => {0,1,2,3,4}->0, {5,6,7,8,9}->1
+//      for 3 servers f(3) = fl(3/3.33) = 0, f(4) = 4/3.33 = 1, f(7) = 7/3.33 = 2 => {0,1,2,3}->0, {4,5,6}->1, {7,8,9}->2
+function digitToServer(x) {
+    return (Math.floor((x) / (10/numberOfServers)));
+}
+
+
+// get the first digit of the id number
+function getFirstDigit(id) {
+    return (Number(String(userID).charAt(0)));
+}
+
+
+// get the first digit of the userID and match it to a number from 0 to numberOfServers
+function userToChainNumber(userID) {
+    var firstDigit = getFirstDigit(userID);
+    return (digitToServer(firstDigit));
 }
