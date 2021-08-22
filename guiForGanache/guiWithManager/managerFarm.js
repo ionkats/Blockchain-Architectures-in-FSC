@@ -1,5 +1,5 @@
 import contractABI from "./ABI.js";
-import initialize from "./initalizer.js";
+import initialize from "./initializer.js";
 
 // put the address of the deployed smart contracts here
 var smartContractAdresses;
@@ -15,7 +15,6 @@ console.log("There are " + numberOfServers + " chains currently running.");
 const startSessionButton = document.getElementById("newSession-button");
 const endSessionButton = document.getElementById("endSession-button");
 const HandoffButton = document.getElementById("Handoff-button");
-const sensorButton = document.getElementById("Sensor-button");
 const tracebackButton = document.getElementById("Traceback-button");
 
 
@@ -31,7 +30,6 @@ var sessionToChain = {};
 function listenAllEvents() {
     smartContract.events.StartOfSession(specifiedEventHandler(startSessionEvent));
     smartContract.events.Handoff(specifiedEventHandler(handoffEvent));
-    smartContract.events.SensorLog(specifiedEventHandler(sensorLogEvent));
     smartContract.events.EndOfSession(specifiedEventHandler(endSessionEvent));
 }
 listenAllEvents();
@@ -68,11 +66,6 @@ async function handoffEvent(values) {
     values["chain"] = userToChainNumber(values._userID);
     transactionData.push(values);
     // sessionToBlockHash[values.sessionID].push(values.previousStateBlockHash);
-}
-
-
-async function sensorLogEvent(values) {
-    //do nothing?
 }
 
 
@@ -133,7 +126,7 @@ async function startTransaction() {
 }
 
 
-// sens 2 handoff transactions one in each of the chains of the previous and the new user
+// sends 2 handoff transactions one in each of the chains of the previous and the new user
 async function handOffTransaction() {
 
     var _sessionID = document.getElementById("Handoff-sessionId").value;
