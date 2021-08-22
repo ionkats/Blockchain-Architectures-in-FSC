@@ -7,7 +7,6 @@ var smartContractAddress = "0xfe3fc1f0FdAAB4CE1A1e47e49E9a563eee42E073";
 const startSessionButton = document.getElementById("newSession-button");
 const endSessionButton = document.getElementById("endSession-button");
 const HandoffButton = document.getElementById("Handoff-button");
-const sensorButton = document.getElementById("Sensor-button");
 const tracebackButton = document.getElementById("Traceback-button");
 
 // address of the server
