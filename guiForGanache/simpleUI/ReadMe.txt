@@ -1,0 +1,1 @@
+In this folder the implementation is for a simple UI and sending transaction with all the data provided from the UI from the user.
