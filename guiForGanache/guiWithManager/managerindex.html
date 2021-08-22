@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="../style.css">
+    <meta charset="UTF-8">
+    <title>State</title>
+    <!-- "http-server -c-1" to this folder to open the server  -->
+</head>
+<body>
+    <div class="main">
+        <br>
+        <!-- <div class="get-contract-address">
+            <input type="text" id="contract-address-input" placeholder="Smart Contract Address">
+        </div> <br> -->
+        <div>
+            <button id="newSession-button" class="transaction"> New Session </button>
+        </div> <br>
+        <div>
+            <button id="Handoff-button" class="transaction"> Handoff </button>
+            <input type="text" id="Handoff-sessionId" placeholder="Session ID">
+        </div> <br>
+        <div>
+            <button id="endSession-button" class="transaction"> End Session  </button>
+            <input type="text" id="endSession-sessionId" placeholder="Session ID">
+        </div> <br>
+        <div>
+            <button id="Sensor-button" class="transaction"> Sensor Data </button>
+            <input type="text" id="Sensor-sessionId" placeholder="Session ID">
+        </div> <br>
+        <div>
+            <button id="Traceback-button" class="transaction"> Traceback </button>
+            <input type="text" id="Traceback-sessionId" placeholder="Session ID">
+        </div>
+    </div>
+
+    <!-- so we can use web3js -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+
+    <!--so you can make imports -->
+    <script src="managerFarm.js" type="module"></script>
+    <script src="initalizer.js" type="module"></script>
+</body>
+</html>
