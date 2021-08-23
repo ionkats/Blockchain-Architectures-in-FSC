@@ -55,11 +55,11 @@ export function initialize() {
     addresses.push(address1);
     contractObjects.push(smartContract1);
 
-    // var web3_2 = new Web3('ws://localhost:8542');
-    // const smartContract2 = new web3_2.eth.Contract(contractABI, contract2);
-    // contractAddresses.push(contract2);
-    // addresses.push(address2);
-    // contractObjects.push(smartContract2);
+    var web3_2 = new Web3('ws://localhost:8542');
+    const smartContract2 = new web3_2.eth.Contract(contractABI, contract2);
+    contractAddresses.push(contract2);
+    addresses.push(address2);
+    contractObjects.push(smartContract2);
 
     // var web3_3 = new Web3('ws://localhost:8543');
     // const smartContract3 = new web3_3.eth.Contract(contractABI, contract3);

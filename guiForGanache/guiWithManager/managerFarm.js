@@ -24,10 +24,12 @@ var sessionToBlockHash = {}; // dictionary key:sessionID, value: previous block 
 // a queue of transaction data for the traceback
 var transactionData = [];
 var sessionToChain = {};
+var firstHandoff = true;
 
 
+// listen to all events from all the servers
 async function listenAllEvents() {
-    for ( var i = 0; i < smartContractObjects.length; i++) {
+    for ( var i = 0; i < numberOfServers; i++) {
         var smartContract = smartContractObjects[i];
         smartContract.events.StartOfSession(specifiedEventHandler(startSessionEvent));
         smartContract.events.Handoff(specifiedEventHandler(handoffEvent));
@@ -51,7 +53,7 @@ function specifiedEventHandler(handler) {
 
 async function startSessionEvent(values) {
     values["nameOfEvent"] = "startSession"; 
-    values["chain"] = userToChainNumber(values._userID);
+    values["chain"] = userToChainNumber(Number(values.userID));
     transactionData.push(values);
     activeSessions.push(values.sessionID);
     numberOfActiveSessions += 1;
@@ -61,7 +63,13 @@ async function startSessionEvent(values) {
  // this event will be called twice in every handoff, and will save 2 different chain values on each one.
 async function handoffEvent(values) {
     values["nameOfEvent"] = "handoff"; 
-    values["chain"] = userToChainNumber(values._userID);
+    if (firstHandoff) {
+        values["chain"] = userToChainNumber(Number(values.previousUserID));
+        firstHandoff = false;
+    } else {
+        values["chain"] = userToChainNumber(Number(values.newUserID));
+        firstHandoff = true;
+    }
     transactionData.push(values);
     // sessionToBlockHash[values.sessionID].push(values.previousStateBlockHash);
 }
@@ -69,7 +77,7 @@ async function handoffEvent(values) {
 
 async function endSessionEvent(values) {    
     values["nameOfEvent"] = "endSession"; 
-    values["chain"] = userToChainNumber(values._userID);
+    values["chain"] = userToChainNumber(Number(values.userID));
     transactionData.push(values);
     var sessionIndex = activeSessions.indexOf(values.sessionID);
     activeSessions.splice(sessionIndex, 1);
@@ -167,11 +175,10 @@ async function handOffTransaction() {
                                                     console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User (" + previousUserID + ") to chain " + previousChainNumber + ")");
                                                     sessionToBlockHash[_sessionID].push(receipt.blockHash); // same previous block hash
                                                     sessionToUserID[_sessionID] = _userID; // save new userID
+                                                    // stop the logging of sensors for this session
+                                                    eval('clearInterval(window.session' + _sessionID + ');');
+                                                    console.log("interval session" + _sessionID + " cleared from chain " + previousChainNumber);
                                                 });
-        // stop the logging of sensors for this session
-        eval('clearInterval(window.session' + _sessionID + ');');
-        console.log("interval session" + _sessionID + " cleared from chain " + previousChainNumber);
-
         // call the function from the smart contract for the new user
         handOffTransaction = newSmartContract.methods.handoff(
                                                 _sessionID,
@@ -185,9 +192,9 @@ async function handOffTransaction() {
                                                     sessionToBlockHash[_sessionID].push(receipt.blockHash); // same previous block hash
                                                     sessionToUserID[_sessionID] = _userID; // save new userID
                                                     sessionToChain[_sessionID] = newChainNumber; // save the number of the chain saved last
+                                                    // begin logging sensors from the other user's chain
+                                                    initializeSensors(_sessionID);
                                                 });
-        // begin logging sensors from the other user
-        initializeSensors(_sessionID);
     } catch (e) {
         console.error(e);
         alert(e.message);
@@ -217,10 +224,10 @@ async function endTransaction() {
                                             .on('receipt', function(receipt) {
                                                 console.log("Session "+ _sessionID + " Ended. TX send to server: " + chainNumber + " from user: " + userID);
                                                 sessionToBlockHash[_sessionID].push(receipt.blockHash);
+                                                // stop the logging of sensors for this session
+                                                eval('clearInterval(window.session' + _sessionID + ');');
+                                                console.log("interval session" + _sessionID + " cleared.");
                                             });
-        // stop the logging of sensors for this session
-        eval('clearInterval(window.session' + _sessionID + ');');
-        console.log("interval session" + _sessionID + " cleared.");
     } catch (e) {
         console.error(e);
         alert(e.message);
@@ -244,7 +251,6 @@ async function sensorTransaction(_sessionID) {
                                                     _sessionID,
                                                     information)
                                                     .send({from: senderAddress});
-
         // console.log("included sensor transaction");
     } catch (e) {
         console.error(e);
@@ -266,10 +272,10 @@ async function initializeSensors(_sessionID) {
 }
 
 
-async function traceback(_sessionID) {
+async function traceback() {
     var _sessionID = document.getElementById("Traceback-sessionId").value;
     var tracebackData = [];
-    
+
     for (let i = 0; i < transactionData.length; i++) {
         if (transactionData[i].sessionID === _sessionID) {
             // add this event data to the end of the list
@@ -277,8 +283,8 @@ async function traceback(_sessionID) {
         }
     }
 
-    console.log("The events for " + _sessionID + " are:");
-    console.log(tracebackData);
+    console.log("The events for " + _sessionID + " are: ");
+    readTracebackData(tracebackData);
 
 }
 
@@ -301,4 +307,20 @@ function getFirstDigit(id) {
 function userToChainNumber(userID) {
     var firstDigit = getFirstDigit(userID);
     return (digitToServer(firstDigit));
+}
+
+
+function readTracebackData(tracebackData) {
+    var description = "";
+    for (var i = 0; i < tracebackData.length; i++) {
+        var thisEvent = tracebackData[i];
+        if (thisEvent.nameOfEvent === 'startSession') {
+            description += "Session " + thisEvent.sessionID + " started from user: " + thisEvent.userID + " on chain: " + thisEvent.chain + " at time: " + thisEvent.time + ". \n";
+        } else if (thisEvent.nameOfEvent === 'handoff') {
+            description += "Handed off from user: " + thisEvent.previousUserID + " to user:" + thisEvent.newUserID + " on chain: " + thisEvent.chain + " at time: " + thisEvent.time + ". \n";
+        } else if (thisEvent.nameOfEvent === 'endSession') {
+            description += "Session " + thisEvent.sessionID + " ended from user: " + thisEvent.userID + " on chain: " + thisEvent.chain + " at time: " + thisEvent.time + ". \n";
+        }
+    }
+    console.log(description);
 }
