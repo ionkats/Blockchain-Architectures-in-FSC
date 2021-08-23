@@ -1,5 +1,5 @@
 import contractABI from "./ABI.js";
-import initialize from "./initializer.js";
+import {initialize} from "./initializer.js";
 
 // put the address of the deployed smart contracts here
 var smartContractAdresses;
@@ -7,7 +7,7 @@ var smartContractObjects;
 var userAddresses;
 
 // initialize the servers and deploy the contracts through initialize function
-(userAddresses, smartContractAdresses, smartContractObjects) = initialize();
+[userAddresses, smartContractObjects, smartContractAdresses] = initialize();
 let numberOfServers = smartContractAdresses.length ;
 console.log("There are " + numberOfServers + " chains currently running.");
 
@@ -27,10 +27,14 @@ var transactionData = [];
 var sessionToChain = {};
 
 
-function listenAllEvents() {
-    smartContract.events.StartOfSession(specifiedEventHandler(startSessionEvent));
-    smartContract.events.Handoff(specifiedEventHandler(handoffEvent));
-    smartContract.events.EndOfSession(specifiedEventHandler(endSessionEvent));
+async function listenAllEvents() {
+    for ( var i = 0; i < smartContractObjects.length; i++) {
+        var smartContract = smartContractObjects[i];
+        smartContract.events.StartOfSession(specifiedEventHandler(startSessionEvent));
+        smartContract.events.Handoff(specifiedEventHandler(handoffEvent));
+        smartContract.events.EndOfSession(specifiedEventHandler(endSessionEvent));
+    }
+    
 }
 listenAllEvents();
 
@@ -84,7 +88,6 @@ function addUiListeners() {
     startSessionButton.addEventListener("click", startTransaction);
     endSessionButton.addEventListener("click", endTransaction);
     HandoffButton.addEventListener("click", handOffTransaction);
-    sensorButton.addEventListener("click", sensorTransaction);
     tracebackButton.addEventListener("click", traceback);
 }
 addUiListeners();
@@ -100,12 +103,12 @@ async function startTransaction() {
 
     // the the chain number from the userID
     var chainNumber = userToChainNumber(userID);
-    console.log("Send to server: " + chainNumber + " from user: " + userID);
+    console.log("Start transaction send to server: " + chainNumber + " from user: " + userID);
 
     // get the address and the smart contract object of the proper chain
     var smartContract = smartContractObjects[chainNumber];
     var senderAddress = userAddresses[chainNumber];
-
+    
     try {
         // call the function from the smart contract
         startTransaction = smartContract.methods.startSession(userID)
@@ -114,9 +117,10 @@ async function startTransaction() {
                                                     // console.log(receipt);
                                                     var _sessionID = receipt.events.StartOfSession.returnValues.sessionID;
                                                     console.log("Session "+ _sessionID + " Activated.");
-                                                    sessionToBlockHash[String[_sessionID]] = [receipt.blockHash]; 
-                                                    sessionToUserID[String[_sessionID]] = userID;
-                                                    sessionToChain[String[_sessionID]] = chainNumber; // save the number of the chain saved last
+                                                    sessionToBlockHash[_sessionID] = [receipt.blockHash]; 
+                                                    sessionToUserID[_sessionID] = userID;
+                                                    sessionToChain[_sessionID] = chainNumber; // save the number of the chain saved last
+                                                    console.log(sessionToChain);
                                                     // initialize the sensors for this session
                                                     initializeSensors(_sessionID);
                                                 });
@@ -137,16 +141,16 @@ async function handOffTransaction() {
     // create a newUserID that is different from the previousUserID
     while (!same) {
         _userID = createUserID();
-        same = (_userID===sessionToUserID[String[_sessionID]]) ? false : true;
+        same = (_userID===sessionToUserID[_sessionID]) ? false : true;
     }
     // get the last item of the block hashes of this session
-    var hashArray = sessionToBlockHash[String[_sessionID]];
+    var hashArray = sessionToBlockHash[_sessionID];
     var previousBlockHash = hashArray[hashArray.length - 1]; 
-    var previousUserID = sessionToUserID[String[_sessionID]];
+    var previousUserID = sessionToUserID[_sessionID];
 
     // the chain number from the previous userID
     var previousChainNumber = userToChainNumber(previousUserID);
-    console.log("Send to server: " + previousChainNumber + " from previous user: " + previousUserID);
+    console.log("Handoff Send to server: " + previousChainNumber + " from previous user: " + previousUserID);
 
     // get the address and the smart contract object of the proper chain from the previous user
     var previousSmartContract = smartContractObjects[previousChainNumber];
@@ -154,7 +158,7 @@ async function handOffTransaction() {
 
     // the chain number from the new userID
     var newChainNumber = userToChainNumber(_userID);
-    console.log("Send to server: " + newChainNumber + " from new user: " + _userID);
+    console.log("Handoff Send to server: " + newChainNumber + " from new user: " + _userID);
 
     // get the address and the smart contract object of the proper chain from the previous user
     var newSmartContract = smartContractObjects[newChainNumber];
@@ -171,8 +175,8 @@ async function handOffTransaction() {
                                                 ).send({from: previousSenderAddress})
                                                 .on('receipt', function(receipt) {
                                                     console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User chain)");
-                                                    sessionToBlockHash[String[_sessionID]].push(receipt.blockHash); // same previous block hash
-                                                    sessionToUserID[String[_sessionID]] = _userID; // save new userID
+                                                    sessionToBlockHash[_sessionID].push(receipt.blockHash); // same previous block hash
+                                                    sessionToUserID[_sessionID] = _userID; // save new userID
                                                 });
         // stop the logging of sensors for this session
         eval('clearInterval(window.session' + _sessionID + ');');
@@ -188,10 +192,11 @@ async function handOffTransaction() {
                                                 ).send({from: newSenderAddress})
                                                 .on('receipt', function(receipt) {
                                                     console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User chain)");
-                                                    sessionToBlockHash[String[_sessionID]].push(receipt.blockHash); // same previous block hash
-                                                    sessionToUserID[String[_sessionID]] = _userID; // save new userID
-                                                    sessionToChain[String[_sessionID]] = newChainNumber; // save the number of the chain saved last
+                                                    sessionToBlockHash[_sessionID].push(receipt.blockHash); // same previous block hash
+                                                    sessionToUserID[_sessionID] = _userID; // save new userID
+                                                    sessionToChain[_sessionID] = newChainNumber; // save the number of the chain saved last
                                                 });
+        // begin logging sensors from the other user
         initializeSensors(_sessionID);
     } catch (e) {
         console.error(e);
@@ -204,11 +209,11 @@ async function handOffTransaction() {
 
 async function endTransaction() {
     var _sessionID = document.getElementById("endSession-sessionId").value;
-    var userID = sessionToUserID[String[_sessionID]];
+    var userID = sessionToUserID[_sessionID];
 
     // the the chain number from the userID
     var chainNumber = userToChainNumber(userID);
-    console.log("Send to server: " + chainNumber + " from user: " + userID);
+    console.log("End transaction send to server: " + chainNumber + " from user: " + userID);
 
     // get the address and the smart contract object of the proper chain
     var smartContract = smartContractObjects[chainNumber];
@@ -220,7 +225,7 @@ async function endTransaction() {
                                             .send({from: senderAddress})
                                             .on('receipt', function(receipt) {
                                                 console.log("Session "+ _sessionID + " Ended.")
-                                                sessionToBlockHash[String[_sessionID]].push(receipt.blockHash);
+                                                sessionToBlockHash[_sessionID].push(receipt.blockHash);
                                             });
 
         // stop the logging of sensors for this session
@@ -237,8 +242,9 @@ async function endTransaction() {
 
 
 async function sensorTransaction(_sessionID) {
-    var information = String(Math.random(98) + 1) + "C";
-    var chainNumber = sessionToChain[String(_sessionID)];
+    var information = String(Math.random(98) + 1) + " C";
+    var chainNumber = sessionToChain[_sessionID];
+    // console.log("sensor logging to  chain " + chainNumber);
 
     // get the address and the smart contract object of the proper chain
     var smartContract = smartContractObjects[chainNumber];
@@ -250,7 +256,7 @@ async function sensorTransaction(_sessionID) {
                                                     information)
                                                     .send({from: senderAddress});
 
-        console.log("included sensor transaction");
+        // console.log("included sensor transaction");
     } catch (e) {
         console.error(e);
         alert(e.message);
@@ -298,7 +304,7 @@ function digitToServer(x) {
 
 // get the first digit of the id number
 function getFirstDigit(id) {
-    return (Number(String(userID).charAt(0)));
+    return (Number(String(id).charAt(0)));
 }
 
 
