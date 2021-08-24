@@ -1,5 +1,6 @@
 import contractABI from "./ABI.js";
 import {initialize} from "./initializer.js";
+import {initializeWithoutData} from "./initializerWithoutData.js";
 
 // put the address of the deployed smart contracts here
 var smartContractAdresses;
@@ -7,7 +8,9 @@ var smartContractObjects;
 var userAddresses;
 
 // initialize the servers and deploy the contracts through initialize function
-[userAddresses, smartContractObjects, smartContractAdresses] = initialize();
+// [userAddresses, smartContractObjects, smartContractAdresses] = initialize();
+[userAddresses, smartContractObjects, smartContractAdresses] = initializeWithoutData();
+
 let numberOfServers = smartContractAdresses.length ;
 console.log("There are " + numberOfServers + " chains currently running.");
 
