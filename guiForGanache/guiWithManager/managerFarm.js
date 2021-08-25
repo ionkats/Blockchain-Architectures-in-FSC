@@ -7,9 +7,14 @@ var smartContractAdresses;
 var smartContractObjects;
 var userAddresses;
 
-// initialize the servers and deploy the contracts through initialize function
+// initialize the servers and deploy the contracts through initialize or initializeWithoutData function
 // [userAddresses, smartContractObjects, smartContractAdresses] = initialize();
 [userAddresses, smartContractObjects, smartContractAdresses] = initializeWithoutData();
+// async function waitForDeployment() {
+//     await initializeWithoutData();
+//     [userAddresses, smartContractObjects, smartContractAdresses]
+// }
+// waitForDeployment()
 
 let numberOfServers = smartContractAdresses.length ;
 console.log("There are " + numberOfServers + " chains currently running.");
