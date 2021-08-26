@@ -40,117 +40,44 @@ var addresses = []
 // uncomment the code blocks based on the number of servers you want to activate
 export function initialize() {
     var web3_0 = new Web3('ws://localhost:8540')
-    const smartContract0 = new web3_0.eth.Contract(contractABI, contract0)
-    contractAddresses.push(contract0)
-    addresses.push(address0)
-    contractObjects.push(smartContract0)
+    pushData(web3_0, contract0)
 
     // var web3_1 = new Web3('ws://localhost:8541')
-    // const smartContract1 = new web3_1.eth.Contract(contractABI, contract1)
-    // contractAddresses.push(contract1)
-    // addresses.push(address1)
-    // contractObjects.push(smartContract1)
+    // pushData(web3_1, contract1)
 
     // var web3_2 = new Web3('ws://localhost:8542')
-    // const smartContract2 = new web3_2.eth.Contract(contractABI, contract2)
-    // contractAddresses.push(contract2)
-    // addresses.push(address2)
-    // contractObjects.push(smartContract2)
+    // pushData(web3_2, contract2)
 
     // var web3_3 = new Web3('ws://localhost:8543')
-    // const smartContract3 = new web3_3.eth.Contract(contractABI, contract3)
-    // contractAddresses.push(contract3)
-    // addresses.push(address3)
-    // contractObjects.push(smartContract3)
+    // pushData(web3_3, contract3)
 
     // var web3_4 = new Web3('ws://localhost:8544')
-    // const smartContract4 = new web3_4.eth.Contract(contractABI, contract4)
-    // contractAddresses.push(contract4)
-    // addresses.push(address4)
-    // contractObjects.push(smartContract4)
+    // pushData(web3_4, contract4)
 
     // var web3_5 = new Web3('ws://localhost:8545')
-    // const smartContract5 = new web3_5.eth.Contract(contractABI, contract5)
-    // contractAddresses.push(contract5)
-    // addresses.push(address5)
-    // contractObjects.push(smartContract5)
+    // pushData(web3_5, contract5)
 
     // var web3_6 = new Web3('ws://localhost:8546')
-    // const smartContract6 = new web3_6.eth.Contract(contractABI, contract6)
-    // contractAddresses.push(contract6)
-    // addresses.push(address6)
-    // contractObjects.push(smartContract6)
+    // pushData(web3_6, contract6)
 
     // var web3_7 = new Web3('ws://localhost:8547')
-    // const smartContract7 = new web3_7.eth.Contract(contractABI, contract7)
-    // contractAddresses.push(contract7)
-    // addresses.push(address7)
-    // contractObjects.push(smartContract7)
+    // pushData(web3_7, contract7)
 
     // var web3_8 = new Web3('ws://localhost:8548')
-    // const smartContract8 = new web3_8.eth.Contract(contractABI, contract8)
-    // contractAddresses.push(contract8)
-    // addresses.push(address8)
-    // contractObjects.push(smartContract8)
+    // pushData(web3_8, contract8)
 
     // var web3_9 = new Web3('ws://localhost:8549')
-    // const smartContract9 = new web3_9.eth.Contract(contractABI, contract9)
-    // contractAddresses.push(contract9)
-    // addresses.push(address9)
-    // contractObjects.push(smartContract9)
+    // pushData(web3_9, contract9)
 
     return([addresses, contractObjects, contractAddresses])
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// INITIALIZATION WITH DYNAMIC NAMES WITH ADDRESS OF THE SMART CONTRACT (NOT WORKING)
-
-// var numberOfServers = 3
-// for (var i = 0; i < numberOfServers; i++) {
-//     eval('var web3_' + i + ' = new Web3(\'ws://localhost:854'+i+'\')')
-//     eval('const smartContract'+i+' = new web3_'+i+'.eth.Contract(contractABI, contract'+i+')')
-//     eval('contractAddresses.push(contract'+i+')')
-//     eval('addresses.push(address'+i+')')
-//     eval('contractObjects.push(smartContract'+i+')')
-// }
-
-// DYNAMIC NAMING OF THE SERVERS AND AUTOMATE DEPLOYMENT OF THE CONTRACT (NOT WORKING)
-
-// // address of the servers
-// for (var i = 0; i <= 1; i++) {
-//     eval('var web3_' + i + ' = new Web3()')
-//     var x
-//     eval('x = web3_' + i + '')
-//     x.setProvider(new x.providers.HttpProvider('http://localhost:854' + i))
-//     // eval('web3_' + i + '.setProvider(new web3_' + i + '.providers.HttpProvider(\'http://localhost:854' + i + '\'))')
-
-//     // check if there is a connection
-//     var flag
-//     eval('flag = web3_'+ i + '.isConnected()')
-//     if (!flag) {
-//         console.log(i + 'is not connected.')
-//     } else {
-//         console.log(i + 'is connected.')
-//     }
-//     // create an object for the i_th contract
-//     eval('var stateandsessionContract_' + i + ' = new web3_' + i + '.eth.Contract(contractABI)')
-//     // deploy the contract in the i_th server
-//     eval('var stateandsession_'+ i + '= stateandsessionContract_' + i + '.deploy({' +
-//             +'data: contractData, arguments: []' +
-//             +'}).send({'+
-//             +'from: address' + i + ' ,'+
-//             +'gas: \'20000000\''+
-//             +'}, function (e, contract){'+
-//                 // +'    console.log(e, contract)'+
-//                 +'    if (typeof contract.address !== \'undefined\') {'+
-//                         +'console.log(\'Contract mined! address: \' + contract.address + \' transactionHash: \' + contract.transactionHash)'+
-//                         +'contactAddresses.push(contract.address)'+
-//                 +'    }'+
-//             +'}) ')
-//     // get the object for further use
-//     eval('contractObjects.push(statesandsessionContract_' + i + ')')
-
-//     //create a list for the sender of transactions
-//     eval('addresses.push(address' + i + ')')
-// }
+function pushData(web3_instance, contractAdr) {
+    web3_instance.eth.getAccounts().then( fetchedAccounts => {
+        console.log(fetchedAccounts)
+        addresses.push(fetchedAccounts)
+        contractAddresses.push(contractAdr)
+        contractObjects.push(new web3_instance.eth.Contract(contractABI, contractAdr))
+            })
+}
