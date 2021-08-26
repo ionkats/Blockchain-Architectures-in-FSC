@@ -65,9 +65,10 @@ export function initialize() {
 
 function pushData(web3_instance, contractAdr) {
     web3_instance.eth.getAccounts().then( fetchedAccounts => {
-        console.log(fetchedAccounts)
+        // console.log(fetchedAccounts)
         addresses.push(fetchedAccounts)
         contractAddresses.push(contractAdr)
-        contractObjects.push(new web3_instance.eth.Contract(contractABI, contractAdr))
             })
+    var smartContract = new web3_instance.eth.Contract(contractABI, contractAdr)
+    contractObjects.push(smartContract)
 }

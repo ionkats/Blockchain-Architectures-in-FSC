@@ -58,6 +58,7 @@ export function initializeWithoutData() {
 
 
 function saveAccountsDeployContract(web3_instance, stateandsessionContract, i) {
+    // var address
     web3_instance.eth.getAccounts().then( fetchedAccounts => {
                                         // console.log(fetchedAccounts)
                                         addresses.push(fetchedAccounts)
@@ -67,9 +68,12 @@ function saveAccountsDeployContract(web3_instance, stateandsessionContract, i) {
                                                         .then( (contractCreated) => {
                                                             console.log('Contract mined for chain ' + i +'. Address: ' + contractCreated.options.address)
                                                             contractAddresses.push(contractCreated.options.address)
+                                                            // address = contractCreated.options.address
                                                             contractObjects.push(new web3_instance.eth.Contract(contractABI, contractCreated.options.address))
                                                         })
                                             })
+    // var smartContract = new web3_instance.eth.Contract(contractABI, address)
+    // contractObjects.push(smartContract)
     
 }
 

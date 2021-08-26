@@ -4,26 +4,29 @@ import {initializeWithoutData} from "./initializerWithoutData.js"
 import {random} from "./initializerWithoutData.js"
 
 // put the address of the deployed smart contracts here
-var smartContractAdresses;
-var smartContractObjects;
-var userAddresses;
+var smartContractAddresses = [];
+var smartContractObjects = [];
+var userAddresses = [];
 
 // uncomment to initialize the servers and get the addresses of already deployed contracts 
 
-[userAddresses, smartContractObjects, smartContractAdresses] = initialize();
-var deployed = true
+// [userAddresses, smartContractObjects, smartContractAddresses] = initialize();
+// var deployed = true;
+// listenAllEvents();
 
 
 // uncomment to initialize servers and deploy the contracts from scratch
 
-// [userAddresses, smartContractObjects, smartContractAdresses] = initializeWithoutData();
-// var deployed = false
-// setTimeout(function () {
-//     deployed = true
-// }, 31000); // wait for 31 seconds for the contracts to be surely deployed (block every 30s)
+[userAddresses, smartContractObjects, smartContractAddresses] = initializeWithoutData();
+var deployed = false;
+setTimeout(function () {
+    deployed = true;
+    listenAllEvents();
+}, 31000); // wait for 31 seconds for the contracts to be surely deployed (block every 30s)
 
 
-let numberOfServers = smartContractAdresses.length ;
+smartContractAddresses = Array(smartContractAddresses);
+let numberOfServers = smartContractAddresses.length;
 console.log("There are " + numberOfServers + " chains currently running.");
 
 // connect the UI buttons
@@ -34,7 +37,6 @@ const tracebackButton = document.getElementById("Traceback-button");
 
 var activeSessions = [];
 var sessionToUserID = {} // key: sessionID, value: current UserID for sanity checks of handoffs
-var numberOfActiveSessions;
 var sessionToBlockHash = {}; // dictionary key:sessionID, value: previous block hash that it passed
 // a queue of transaction data for the traceback
 var transactionData = [];
@@ -51,7 +53,7 @@ async function listenAllEvents() {
         smartContract.events.EndOfSession(specifiedEventHandler(endSessionEvent));
     }
 }
-listenAllEvents();
+
 
 
 function specifiedEventHandler(handler) {
@@ -71,7 +73,6 @@ async function startSessionEvent(values) {
     values["chain"] = userToChainNumber(Number(values.userID));
     transactionData.push(values);
     activeSessions.push(values.sessionID);
-    numberOfActiveSessions += 1;
 }
 
 
@@ -96,7 +97,6 @@ async function endSessionEvent(values) {
     transactionData.push(values);
     var sessionIndex = activeSessions.indexOf(values.sessionID);
     activeSessions.splice(sessionIndex, 1);
-    numberOfActiveSessions -= 1;
 }
 
 
@@ -113,6 +113,10 @@ addUiListeners();
 // called when the start new session button is pressed initializes the new sessionID available and 
 // from this point forward to call the sensor transaction every 5 sec to be to the queue of pending transactions
 async function startTransaction() {
+    if (!deployed) {
+        alert("Wait a little bit more for the contracts to be deployed")
+        return
+    }
     // creates a random 6-digits number of userID
     var userID = createUserID();
 
@@ -149,6 +153,10 @@ async function startTransaction() {
 
 // sends 2 handoff transactions one in each of the chains of the previous and the new user
 async function handOffTransaction() {
+    if (!deployed) {
+        alert("Wait a little bit more for the contracts to be deployed")
+        return
+    }
     var _sessionID = document.getElementById("Handoff-sessionId").value;
     var _userID;
     var same = false;
@@ -181,42 +189,38 @@ async function handOffTransaction() {
     var newSenderAddress = userAddresses[newChainNumber][0];
 
     try {
-        if (deployed) {
-            // call the function from the smart contract for the previous user
-            handOffTransaction = previousSmartContract.methods.handoff(
-                                                    _sessionID,
-                                                    previousUserID, // previous userID
-                                                    _userID, // new userID
-                                                    previousBlockHash,
-                                                    previousBlockHash // currently for the previous ledger name
-                                                    ).send({from: previousSenderAddress})
-                                                    .on('receipt', function(receipt) {
-                                                        console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User (" + previousUserID + ") to chain " + previousChainNumber + ")");
-                                                        sessionToBlockHash[_sessionID].push(receipt.blockHash); // same previous block hash
-                                                        sessionToUserID[_sessionID] = _userID; // save new userID
-                                                        // stop the logging of sensors for this session
-                                                        eval('clearInterval(window.session' + _sessionID + ');');
-                                                        console.log("interval session" + _sessionID + " cleared from chain " + previousChainNumber);
-                                                    });
-            // call the function from the smart contract for the new user
-            handOffTransaction = newSmartContract.methods.handoff(
-                                                    _sessionID,
-                                                    previousUserID, // previous userID
-                                                    _userID, // new userID
-                                                    previousBlockHash,
-                                                    previousBlockHash // currently for the previous ledger name
-                                                    ).send({from: newSenderAddress})
-                                                    .on('receipt', function(receipt) {
-                                                        console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User (" + _userID + ") to chain " + newChainNumber + ")");
-                                                        sessionToBlockHash[_sessionID].push(receipt.blockHash); // same previous block hash
-                                                        sessionToUserID[_sessionID] = _userID; // save new userID
-                                                        sessionToChain[_sessionID] = newChainNumber; // save the number of the chain saved last
-                                                        // begin logging sensors from the other user's chain
-                                                        initializeSensors(_sessionID);
-                                                    });
-        } else {
-            alert("Wait a little bit more for the contracts to be deployed")
-        }
+        // call the function from the smart contract for the previous user
+        handOffTransaction = previousSmartContract.methods.handoff(
+                                                _sessionID,
+                                                previousUserID, // previous userID
+                                                _userID, // new userID
+                                                previousBlockHash,
+                                                previousBlockHash // currently for the previous ledger name
+                                                ).send({from: previousSenderAddress})
+                                                .on('receipt', function(receipt) {
+                                                    console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User (" + previousUserID + ") to chain " + previousChainNumber + ")");
+                                                    sessionToBlockHash[_sessionID].push(receipt.blockHash); // same previous block hash
+                                                    sessionToUserID[_sessionID] = _userID; // save new userID
+                                                    // stop the logging of sensors for this session
+                                                    eval('clearInterval(window.session' + _sessionID + ');');
+                                                    console.log("interval session" + _sessionID + " cleared from chain " + previousChainNumber);
+                                                });
+        // call the function from the smart contract for the new user
+        handOffTransaction = newSmartContract.methods.handoff(
+                                                _sessionID,
+                                                previousUserID, // previous userID
+                                                _userID, // new userID
+                                                previousBlockHash,
+                                                previousBlockHash // currently for the previous ledger name
+                                                ).send({from: newSenderAddress})
+                                                .on('receipt', function(receipt) {
+                                                    console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User (" + _userID + ") to chain " + newChainNumber + ")");
+                                                    sessionToBlockHash[_sessionID].push(receipt.blockHash); // same previous block hash
+                                                    sessionToUserID[_sessionID] = _userID; // save new userID
+                                                    sessionToChain[_sessionID] = newChainNumber; // save the number of the chain saved last
+                                                    // begin logging sensors from the other user's chain
+                                                    initializeSensors(_sessionID);
+                                                });
     } catch (e) {
         console.error(e);
         alert(e.message);
@@ -228,6 +232,10 @@ async function handOffTransaction() {
 
 
 async function endTransaction() {
+    if (!deployed) {
+        alert("Wait a little bit more for the contracts to be deployed")
+        return
+    }
     var _sessionID = document.getElementById("endSession-sessionId").value;
     var userID = sessionToUserID[_sessionID];
 
@@ -240,20 +248,16 @@ async function endTransaction() {
     var senderAddress = userAddresses[chainNumber][0];
 
     try {
-        if (deployed) {
-            // call the function from the smart contract
-            endTransaction = smartContract.methods.endSession(_sessionID, userID)
-                                                .send({from: senderAddress})
-                                                .on('receipt', function(receipt) {
-                                                    console.log("Session "+ _sessionID + " Ended. TX send to server: " + chainNumber + " from user: " + userID);
-                                                    sessionToBlockHash[_sessionID].push(receipt.blockHash);
-                                                    // stop the logging of sensors for this session
-                                                    eval('clearInterval(window.session' + _sessionID + ');');
-                                                    console.log("interval session" + _sessionID + " cleared.");
-                                                });
-        } else {
-            alert("Wait a little bit more for the contracts to be deployed")
-        }
+        // call the function from the smart contract
+        var endTransaction = smartContract.methods.endSession(_sessionID, userID)
+                                            .send({from: senderAddress})
+                                            .on('receipt', function(receipt) {
+                                                console.log("Session "+ _sessionID + " Ended. TX send to server: " + chainNumber + " from user: " + userID);
+                                                sessionToBlockHash[_sessionID].push(receipt.blockHash);
+                                                // stop the logging of sensors for this session
+                                                eval('clearInterval(window.session' + _sessionID + ');');
+                                                console.log("interval session" + _sessionID + " cleared.");
+                                            });
     } catch (e) {
         console.error(e);
         alert(e.message);
@@ -309,9 +313,15 @@ async function traceback() {
         }
     }
 
-    console.log("The events for " + _sessionID + " are: ");
-    readTracebackData(tracebackData);
+    if (tracebackData.length === 0) {
+        console.log("No events for this session.")
+    } else {
+        console.log("The events for " + _sessionID + " are: ");
+        readTracebackData(tracebackData);
+    }
 
+    // reset value to the placeholder
+    document.getElementById("Traceback-sessionId").value = "";
 }
 
 
