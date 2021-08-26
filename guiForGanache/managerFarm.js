@@ -8,7 +8,7 @@ var smartContractAdresses;
 var smartContractObjects;
 var userAddresses;
 
-// uncomments to initialize the servers and get the addresses of already deplyed contracts 
+// uncomment to initialize the servers and get the addresses of already deployed contracts 
 
 [userAddresses, smartContractObjects, smartContractAdresses] = initialize();
 var deployed = true
