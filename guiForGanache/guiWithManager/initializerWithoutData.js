@@ -9,12 +9,13 @@ var addresses = []
 
 
 // uncomment the code blocks based on the number of servers you want to activate
-export async function initializeWithoutData() {
+export function initializeWithoutData() {
 
     // create instances, get the accounts and deploy the smart contract for all the chains
     var web3_0 = new Web3('ws://localhost:8540')
     var stateandsessionContract_0 = new web3_0.eth.Contract(contractABI)
-    await saveAccountsDeployContract(web3_0, stateandsessionContract_0, 0)
+    saveAccountsDeployContract(web3_0, stateandsessionContract_0, 0)
+
 
     // var web3_1 = new Web3('ws://localhost:8541')
     // var stateandsessionContract_1 = new web3_1.eth.Contract(contractABI)
@@ -58,7 +59,7 @@ export async function initializeWithoutData() {
 
 function saveAccountsDeployContract(web3_instance, stateandsessionContract, i) {
     web3_instance.eth.getAccounts().then( fetchedAccounts => {
-                                        console.log(fetchedAccounts)
+                                        // console.log(fetchedAccounts)
                                         addresses.push(fetchedAccounts)
                                         var max = fetchedAccounts.length
                                         stateandsessionContract.deploy({data: contractData, arguments: []})
@@ -66,12 +67,14 @@ function saveAccountsDeployContract(web3_instance, stateandsessionContract, i) {
                                                         .then( (contractCreated) => {
                                                             console.log('Contract mined for chain ' + i +'. Address: ' + contractCreated.options.address)
                                                             contractAddresses.push(contractCreated.options.address)
+                                                            contractObjects.push(new web3_instance.eth.Contract(contractABI, contractCreated.options.address))
                                                         })
                                             })
+    
 }
 
 
 // get random integer in [min, max)
-function random(min, max) {
+export function random(min, max) {
     return (Math.floor(Math.random()*(max - min)) + min)
 }
