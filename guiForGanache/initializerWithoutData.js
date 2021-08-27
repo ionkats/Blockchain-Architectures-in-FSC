@@ -6,6 +6,7 @@ var contractData = "0x608060405234801561001057600080fd5b50610b2b8061002060003960
 var contractAddresses = []
 var contractObjects = []
 var addresses = []
+var web3Instances = []
 
 
 // uncomment the code blocks based on the number of servers you want to activate
@@ -53,7 +54,7 @@ export function initializeWithoutData() {
     // var stateandsessionContract_9 = new web3_9.eth.Contract(contractABI)
     // saveAccountsDeployContract(web3_9, stateandsessionContract_9, 9)
 
-    return([addresses, contractObjects, contractAddresses])
+    return([addresses, contractObjects, contractAddresses, web3Instances])
 }
 
 
@@ -68,13 +69,10 @@ function saveAccountsDeployContract(web3_instance, stateandsessionContract, i) {
                                                         .then( (contractCreated) => {
                                                             console.log('Contract mined for chain ' + i +'. Address: ' + contractCreated.options.address)
                                                             contractAddresses.push(contractCreated.options.address)
-                                                            // address = contractCreated.options.address
                                                             contractObjects.push(new web3_instance.eth.Contract(contractABI, contractCreated.options.address))
                                                         })
                                             })
-    // var smartContract = new web3_instance.eth.Contract(contractABI, address)
-    // contractObjects.push(smartContract)
-    
+    web3Instances.push(web3_instance)
 }
 
 

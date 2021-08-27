@@ -26,6 +26,7 @@ var contract9 = "0x0a3074056385C8b81a68fC69bF67eCcbFBA85A85"
 var contractAddresses = []
 var contractObjects = []
 var addresses = []
+var web3Instances = []
 
 // uncomment the code blocks based on the number of servers you want to activate
 export function initialize() {
@@ -58,8 +59,8 @@ export function initialize() {
 
     // var web3_9 = new Web3('ws://localhost:8549')
     // pushData(web3_9, contract9)
-
-    return([addresses, contractObjects, contractAddresses])
+    
+    return([addresses, contractObjects, contractAddresses, web3Instances])
 }
 
 
@@ -67,8 +68,9 @@ function pushData(web3_instance, contractAdr) {
     web3_instance.eth.getAccounts().then( fetchedAccounts => {
         // console.log(fetchedAccounts)
         addresses.push(fetchedAccounts)
-        contractAddresses.push(contractAdr)
             })
+    contractAddresses.push(contractAdr)
     var smartContract = new web3_instance.eth.Contract(contractABI, contractAdr)
     contractObjects.push(smartContract)
+    web3Instances.push(web3_instance)
 }
