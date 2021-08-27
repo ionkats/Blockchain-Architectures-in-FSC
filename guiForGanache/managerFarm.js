@@ -1,7 +1,7 @@
-import contractABI from "./ABI.js"
 import {initialize} from "./initializer.js"
 import {initializeWithoutData} from "./initializerWithoutData.js"
 import {random} from "./initializerWithoutData.js"
+import {tracebackThroughBlockChain} from "./traceback.js"
 
 // put the address of the deployed smart contracts here
 var smartContractAddresses = []
@@ -37,7 +37,7 @@ setTimeout(function () {
 // }, 31000) // wait for 31 seconds for the contracts to be surely deployed (block every 30s)
 
 
-console.log(smartContractAddresses)
+// console.log(smartContractAddresses)
 let numberOfServers = smartContractAddresses.length
 console.log("There are " + numberOfServers + " chains currently running.")
 
@@ -143,6 +143,7 @@ async function startTransaction() {
         var startTransactionObject = smartContract.methods.startSession(userID)
                                                 .send({from: senderAddress})
                                                 .then(function(receipt){ // called on event
+                                                    // console.log(receipt)
                                                     var _sessionID = receipt.events.StartOfSession.returnValues.sessionID
                                                     console.log("Session "+ _sessionID + " Activated. TX send to server: " + chainNumber + " from user: " + userID)
                                                     sessionToUserID[_sessionID] = userID
@@ -150,7 +151,7 @@ async function startTransaction() {
                                                     sessionToChain[_sessionID] = chainNumber // save the number of the chain saved last
                                                     // initialize the sensors for this session
                                                     initializeSensors(_sessionID)
-                                                    // webInstance.eth.getTransactionReceipt(receipt.transactionHash).then(console.log)
+                                                    webInstance.eth.getTransactionReceipt(receipt.transactionHash).then(console.log)
                                                 })
     } catch (e) {
         console.error(e)
@@ -175,9 +176,8 @@ async function handOffTransaction() {
         same = (_userID === sessionToUserID[_sessionID]) ? false : true
     }
 
-    // get the last item of the transaction hashes of this session
-    var hashArray = sessionToTransactionHash[_sessionID]
-    var previousTransactionHash = hashArray[hashArray.length - 1]
+    // get the last transaction hash of this session
+    var previousTransactionHash = sessionToTransactionHash[_sessionID]
     var previousUserID = sessionToUserID[_sessionID]
 
     // the chain number from the previous userID
@@ -199,7 +199,7 @@ async function handOffTransaction() {
                                                     console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User (" + previousUserID + ") to chain " + previousChainNumber + ")")
                                                     sessionToUserID[_sessionID] = _userID // save new userID
                                                     previousTransactionHash = receipt.transactionHash
-                                                    sessionToTransactionHash[_sessionID].push(receipt.transactionHash)
+                                                    sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
                                                     // stop the logging of sensors for this session
                                                     eval('clearInterval(window.session' + _sessionID + ')')
                                                     // console.log("interval session" + _sessionID + " cleared from chain " + previousChainNumber)
@@ -224,7 +224,7 @@ async function handOffTransaction() {
                                                     console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User (" + _userID + ") to chain " + newChainNumber + ")")
                                                     sessionToUserID[_sessionID] = _userID // save new userID
                                                     sessionToChain[_sessionID] = newChainNumber // save the number of the chain saved last
-                                                    sessionToTransactionHash[_sessionID].push(receipt.transactionHash)
+                                                    sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
                                                     // begin logging sensors from the other user's chain
                                                     initializeSensors(_sessionID)
                                                 })
@@ -253,16 +253,15 @@ async function endTransaction() {
     var smartContract = smartContractObjects[chainNumber]
     var senderAddress = userAddresses[chainNumber][0]
 
-    // get the last item of the transaction hashes of this session
-    var hashArray = sessionToTransactionHash[_sessionID]
-    var previousTransactionHash = hashArray[hashArray.length - 1]
+    // get the last transaction hash of this session
+    var previousTransactionHash = sessionToTransactionHash[_sessionID]
     try {
         // call the function from the smart contract
         var endTransactionObject = smartContract.methods.endSession(_sessionID, userID, previousTransactionHash)
                                             .send({from: senderAddress})
                                             .on('receipt', function(receipt) {
                                                 console.log("Session "+ _sessionID + " Ended. TX send to server: " + chainNumber + " from user: " + userID)
-                                                sessionToTransactionHash[_sessionID].push(receipt.transactionHash)
+                                                sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
                                                 // stop the logging of sensors for this session
                                                 eval('clearInterval(window.session' + _sessionID + ')')
                                                 // console.log("interval session" + _sessionID + " cleared.")
@@ -311,22 +310,9 @@ async function initializeSensors(_sessionID) {
 
 
 async function traceback() {
-    var _sessionID = document.getElementById("Traceback-sessionId").value
-    var tracebackData = []
-
-    for (let i = 0; i < transactionData.length; i++) {
-        if (transactionData[i].sessionID === _sessionID) {
-            // add this event data to the end of the list
-            tracebackData.push(transactionData[i])
-        }
-    }
-
-    if (tracebackData.length === 0) {
-        console.log("No events for this session.")
-    } else {
-        console.log("The events for " + _sessionID + " are: ")
-        readTracebackData(tracebackData)
-    }
+    var sessionID = document.getElementById("Traceback-sessionId").value
+    
+    tracebackThroughBlockChain(sessionToTransactionHash[sessionID], sessionToChain[sessionID], sessionID, web3Instances)
 
     // reset value to the placeholder
     document.getElementById("Traceback-sessionId").value = ""
@@ -351,20 +337,4 @@ function getFirstDigit(id) {
 function userToChainNumber(userID) {
     var firstDigit = getFirstDigit(userID)
     return (digitToServer(firstDigit))
-}
-
-
-function readTracebackData(tracebackData) {
-    var description = ""
-    for (var i = 0; i < tracebackData.length; i++) {
-        var thisEvent = tracebackData[i]
-        if (thisEvent.nameOfEvent === 'startSession') {
-            description += "Session " + thisEvent.sessionID + " started from user: " + thisEvent.userID + " on chain: " + thisEvent.chain + " at time: " + thisEvent.time + ". \n"
-        } else if (thisEvent.nameOfEvent === 'handoff') {
-            description += "Handed off from user: " + thisEvent.previousUserID + " to user:" + thisEvent.newUserID + " on chain: " + thisEvent.chain + " at time: " + thisEvent.time + ". \n"
-        } else if (thisEvent.nameOfEvent === 'endSession') {
-            description += "Session " + thisEvent.sessionID + " ended from user: " + thisEvent.userID + " on chain: " + thisEvent.chain + " at time: " + thisEvent.time + ". \n"
-        }
-    }
-    console.log(description)
 }
