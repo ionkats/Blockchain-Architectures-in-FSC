@@ -12,7 +12,7 @@ contract StateAndSession {
         uint256 sessionID,
         uint32 previousUserID,
         uint32 newUserID, 
-        bytes32 previousStateBlockHash, 
+        bytes32 previousStateTransactionHash, 
         bytes32 previousStateLedgerName,
         uint256 time
     );
@@ -26,6 +26,7 @@ contract StateAndSession {
     event EndOfSession(
         uint256 sessionID,
         uint32 userID,
+        bytes32 previousTransactionHash,
         uint256 time
     );
 
@@ -47,7 +48,7 @@ contract StateAndSession {
         uint256 _sessionID, 
         uint32 _previousUserID,
         uint32 _newUserID,
-        bytes32 _previousStateBlockHash,
+        bytes32 _previousStateTransactionHash,
         bytes32 _previousStateLedgerName
         ) public {
             require(activeSessions[_sessionID], "Not active Session");
@@ -55,7 +56,7 @@ contract StateAndSession {
                 _sessionID, 
                 _previousUserID, 
                 _newUserID, 
-                _previousStateBlockHash, 
+                _previousStateTransactionHash, 
                 _previousStateLedgerName, 
                 block.timestamp
                 );
@@ -75,11 +76,12 @@ contract StateAndSession {
         );
     }
 
-    function endSession(uint256 _sessionID, uint32 _userID) public{
+    function endSession(uint256 _sessionID, uint32 _userID, bytes32 previousTransactionHash) public{
         require(activeSessions[_sessionID], "Not active session");
         emit EndOfSession(
             _sessionID,
             _userID,
+            previousTransactionHash,
             block.timestamp
         );
         activeSessions[_sessionID] = false;
