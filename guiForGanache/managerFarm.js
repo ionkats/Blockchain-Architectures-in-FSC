@@ -10,6 +10,7 @@ var userAddresses = []
 var web3Instances = []
 
 // uncomment to initialize the servers and get the addresses of already deployed contracts 
+
 var data = initialize()
 userAddresses = data[0]
 smartContractObjects =data[1] 
@@ -132,11 +133,9 @@ async function startTransaction() {
 
     // the the chain number from the userID
     var chainNumber = userToChainNumber(userID)
-    // console.log("Start transaction send to server: " + chainNumber + " from user: " + userID)
 
     // get the address and the smart contract object of the proper chain
     var smartContract = smartContractObjects[chainNumber]
-    console.log(userAddresses)
     var senderAddress = userAddresses[chainNumber][0]
     var webInstance = web3Instances[chainNumber]
     try {
@@ -147,12 +146,11 @@ async function startTransaction() {
                                                     var _sessionID = receipt.events.StartOfSession.returnValues.sessionID
                                                     console.log("Session "+ _sessionID + " Activated. TX send to server: " + chainNumber + " from user: " + userID)
                                                     sessionToUserID[_sessionID] = userID
-                                                    console.log(receipt.transactionHash)
                                                     sessionToTransactionHash[_sessionID] = [receipt.transactionHash]
                                                     sessionToChain[_sessionID] = chainNumber // save the number of the chain saved last
                                                     // initialize the sensors for this session
                                                     initializeSensors(_sessionID)
-                                                    webInstance.eth.getTransactionReceipt(receipt.transactionHash).then(console.log)
+                                                    // webInstance.eth.getTransactionReceipt(receipt.transactionHash).then(console.log)
                                                 })
     } catch (e) {
         console.error(e)
@@ -174,7 +172,7 @@ async function handOffTransaction() {
     // create a newUserID that is different from the previousUserID
     while (!same) {
         _userID = createUserID()
-        same = (_userID===sessionToUserID[_sessionID]) ? false : true
+        same = (_userID === sessionToUserID[_sessionID]) ? false : true
     }
 
     // get the last item of the transaction hashes of this session
@@ -184,7 +182,6 @@ async function handOffTransaction() {
 
     // the chain number from the previous userID
     var previousChainNumber = userToChainNumber(previousUserID)
-    // console.log("Handoff Send to server: " + previousChainNumber + " from previous user: " + previousUserID)
 
     // get the address and the smart contract object of the proper chain from the previous user
     var previousSmartContract = smartContractObjects[previousChainNumber]
@@ -196,32 +193,20 @@ async function handOffTransaction() {
                                                 previousUserID, // previous userID
                                                 _userID, // new userID
                                                 previousTransactionHash,
-                                                previousTransactionHash // currently for the previous ledger name
+                                                previousChainNumber // save the index of the previous chain
                                                 ).send({from: previousSenderAddress})
                                                 .on('receipt', function(receipt) {
                                                     console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User (" + previousUserID + ") to chain " + previousChainNumber + ")")
                                                     sessionToUserID[_sessionID] = _userID // save new userID
-                                                    console.log(receipt.transactionHash)
+                                                    previousTransactionHash = receipt.transactionHash
                                                     sessionToTransactionHash[_sessionID].push(receipt.transactionHash)
                                                     // stop the logging of sensors for this session
                                                     eval('clearInterval(window.session' + _sessionID + ')')
-                                                    console.log("interval session" + _sessionID + " cleared from chain " + previousChainNumber)
+                                                    // console.log("interval session" + _sessionID + " cleared from chain " + previousChainNumber)
                                                 })
-
-        // get the last item of the transaction hashes of this session
-        var flag = true
-        while (flag) {
-            var hashArray = sessionToTransactionHash[_sessionID]
-            var transactionHash = hashArray[hashArray.length - 1]
-            if (previousTransactionHash !== transactionHash) {
-                flag = false
-            }
-        }
-       
 
         // the chain number from the new userID
         var newChainNumber = userToChainNumber(_userID)
-        // console.log("Handoff Send to server: " + newChainNumber + " from new user: " + _userID)
 
         // get the address and the smart contract object of the proper chain from the new user
         var newSmartContract = smartContractObjects[newChainNumber]
@@ -233,13 +218,12 @@ async function handOffTransaction() {
                                                 previousUserID, // previous userID
                                                 _userID, // new userID
                                                 previousTransactionHash,
-                                                previousTransactionHash // currently for the previous ledger name
+                                                previousChainNumber // save the index of the previous chain
                                                 ).send({from: newSenderAddress})
                                                 .on('receipt', function(receipt) {
                                                     console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User (" + _userID + ") to chain " + newChainNumber + ")")
                                                     sessionToUserID[_sessionID] = _userID // save new userID
                                                     sessionToChain[_sessionID] = newChainNumber // save the number of the chain saved last
-                                                    console.log(receipt.transactionHash)
                                                     sessionToTransactionHash[_sessionID].push(receipt.transactionHash)
                                                     // begin logging sensors from the other user's chain
                                                     initializeSensors(_sessionID)
@@ -264,7 +248,6 @@ async function endTransaction() {
 
     // the chain number from the userID
     var chainNumber = userToChainNumber(userID)
-    // console.log("End transaction send to server: " + chainNumber + " from user: " + userID)
 
     // get the address and the smart contract object of the proper chain
     var smartContract = smartContractObjects[chainNumber]
@@ -279,11 +262,10 @@ async function endTransaction() {
                                             .send({from: senderAddress})
                                             .on('receipt', function(receipt) {
                                                 console.log("Session "+ _sessionID + " Ended. TX send to server: " + chainNumber + " from user: " + userID)
-                                                console.log(receipt.transactionHash)
                                                 sessionToTransactionHash[_sessionID].push(receipt.transactionHash)
                                                 // stop the logging of sensors for this session
                                                 eval('clearInterval(window.session' + _sessionID + ')')
-                                                console.log("interval session" + _sessionID + " cleared.")
+                                                // console.log("interval session" + _sessionID + " cleared.")
                                             })
     } catch (e) {
         console.error(e)
@@ -308,7 +290,6 @@ async function sensorTransaction(_sessionID) {
                                                     _sessionID,
                                                     information)
                                                     .send({from: senderAddress})
-        // console.log("included sensor transaction")
     } catch (e) {
         console.error(e)
         alert(e.message)
@@ -347,7 +328,6 @@ async function traceback() {
         readTracebackData(tracebackData)
     }
 
-    // console.log(sessionToTransactionHash[_sessionID])
     // reset value to the placeholder
     document.getElementById("Traceback-sessionId").value = ""
 }

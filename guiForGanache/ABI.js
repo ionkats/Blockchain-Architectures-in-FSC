@@ -59,9 +59,9 @@ export default [
 			},
 			{
 				"indexed": false,
-				"internalType": "bytes32",
-				"name": "previousStateLedgerName",
-				"type": "bytes32"
+				"internalType": "uint32",
+				"name": "previousChainIndex",
+				"type": "uint32"
 			},
 			{
 				"indexed": false,
@@ -156,7 +156,7 @@ export default [
 			},
 			{
 				"internalType": "bytes32",
-				"name": "previousTransactionHash",
+				"name": "_previousTransactionHash",
 				"type": "bytes32"
 			}
 		],
@@ -188,9 +188,9 @@ export default [
 				"type": "bytes32"
 			},
 			{
-				"internalType": "bytes32",
-				"name": "_previousStateLedgerName",
-				"type": "bytes32"
+				"internalType": "uint32",
+				"name": "_previousChainIndex",
+				"type": "uint32"
 			}
 		],
 		"name": "handoff",

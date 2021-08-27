@@ -13,7 +13,7 @@ contract StateAndSession {
         uint32 previousUserID,
         uint32 newUserID, 
         bytes32 previousStateTransactionHash, 
-        bytes32 previousStateLedgerName,
+        uint32 previousChainIndex,
         uint256 time
     );
 
@@ -30,7 +30,14 @@ contract StateAndSession {
         uint256 time
     );
 
+    // event migration(
+    //     uint256 userID,
+    //     uint32 chainIndex,
+    //     uint256 time
+    // );
+
     mapping(uint256 => bool) public activeSessions;
+    // mapping(uint256 => uint32) public userToChain;
     uint256 public sessionID;
 
     function startSession(
@@ -49,7 +56,7 @@ contract StateAndSession {
         uint32 _previousUserID,
         uint32 _newUserID,
         bytes32 _previousStateTransactionHash,
-        bytes32 _previousStateLedgerName
+        uint32 _previousChainIndex
         ) public {
             require(activeSessions[_sessionID], "Not active Session");
             emit Handoff(
@@ -57,7 +64,7 @@ contract StateAndSession {
                 _previousUserID, 
                 _newUserID, 
                 _previousStateTransactionHash, 
-                _previousStateLedgerName, 
+                _previousChainIndex, 
                 block.timestamp
                 );
     }
@@ -76,14 +83,18 @@ contract StateAndSession {
         );
     }
 
-    function endSession(uint256 _sessionID, uint32 _userID, bytes32 previousTransactionHash) public{
+    function endSession(uint256 _sessionID, uint32 _userID, bytes32 _previousTransactionHash) public{
         require(activeSessions[_sessionID], "Not active session");
         emit EndOfSession(
             _sessionID,
             _userID,
-            previousTransactionHash,
+            _previousTransactionHash,
             block.timestamp
         );
         activeSessions[_sessionID] = false;
     }
+
+    // function migratingUser(uint256 _userID, uint32 chainIndex) public {
+    //     emit migration(_userID, chainIndex, block.timestamp);
+    // }
 }
