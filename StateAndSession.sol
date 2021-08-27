@@ -3,13 +3,13 @@ pragma solidity ^0.8.3;
 contract StateAndSession {
 
     event StartOfSession(
-        uint256 sessionID,
+        uint256 indexed sessionID,
         uint32 userID, 
         uint256 time
     );
 
     event Handoff(
-        uint256 sessionID,
+        uint256 indexed sessionID,
         uint32 previousUserID,
         uint32 newUserID, 
         bytes32 previousStateTransactionHash, 
@@ -18,13 +18,13 @@ contract StateAndSession {
     );
 
     event SensorLog(
-        uint256 sessionID,
+        uint256 indexed sessionID,
         uint256 time,
         string info
     );
 
     event EndOfSession(
-        uint256 sessionID,
+        uint256 indexed sessionID,
         uint32 userID,
         bytes32 previousTransactionHash,
         uint256 time

@@ -3,7 +3,7 @@ export default [
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "uint256",
 				"name": "sessionID",
 				"type": "uint256"
@@ -34,7 +34,7 @@ export default [
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "uint256",
 				"name": "sessionID",
 				"type": "uint256"
@@ -77,7 +77,7 @@ export default [
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "uint256",
 				"name": "sessionID",
 				"type": "uint256"
@@ -102,7 +102,7 @@ export default [
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "uint256",
 				"name": "sessionID",
 				"type": "uint256"
