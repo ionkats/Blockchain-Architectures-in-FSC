@@ -57,7 +57,7 @@ contract StateAndSession {
         uint32 _newUserID,
         bytes32 _previousStateTransactionHash,
         uint32 _previousChainIndex
-        ) public {
+        ) external {
             require(activeSessions[_sessionID], "Not active Session");
             emit Handoff(
                 _sessionID, 
@@ -74,7 +74,7 @@ contract StateAndSession {
         return sessionID;
     }
 
-    function sensorLogging(uint256 _sessionID, string memory information) public{
+    function sensorLogging(uint256 _sessionID, string memory information) external{
         require(activeSessions[_sessionID], "Not active session");
         emit SensorLog(
             _sessionID,
@@ -83,7 +83,7 @@ contract StateAndSession {
         );
     }
 
-    function endSession(uint256 _sessionID, uint32 _userID, bytes32 _previousTransactionHash) public{
+    function endSession(uint256 _sessionID, uint32 _userID, bytes32 _previousTransactionHash) external{
         require(activeSessions[_sessionID], "Not active session");
         emit EndOfSession(
             _sessionID,
@@ -94,7 +94,7 @@ contract StateAndSession {
         activeSessions[_sessionID] = false;
     }
 
-    // function migratingUser(uint256 _userID, uint32 chainIndex) public {
+    // function migratingUser(uint256 _userID, uint32 chainIndex) external {
     //     emit migration(_userID, chainIndex, block.timestamp);
     // }
 }
