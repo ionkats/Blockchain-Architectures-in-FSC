@@ -1,19 +1,27 @@
-// const keccak256 = require('keccak256')
-
-export function tracebackThroughBlockChain(transaction, chainIndex, sessionID, web3Instances) {
+export async function tracebackThroughBlockChain(transaction, chainIndex, sessionID, web3Instances) {
     var currentChain = chainIndex
     var currentTransactionHash = transaction
     var tracebackDone = false
     while (!tracebackDone) {
+        var values
         var web3_instance = web3Instances[currentChain]
-        // console.log(web3_instance.eth.getTransactionReceipt(currentTransactionHash))
-        // console.log(web3_instance.eth.getTransactionReceipt(currentTransactionHash).logs)
-        var topics = web3_instance.eth.getTransactionReceipt(currentTransactionHash).logs[0].topics
-        console.log(topics)
-        var data = web3_instance.eth.getTransactionReceipt(currentTransactionHash).logs[0].data
-        console.log(data)
+        // var receipt = web3_instance.eth.getTransactionReceipt(currentTransactionHash)
+        // console.log(receipt)
+        // console.log(receipt.getPastLogs)
 
-        if (!rightSession(topics[1], sessionID)) {
+        var receipt = await web3_instance.eth.getTransactionReceipt(currentTransactionHash);
+
+        while(receipt == null){
+            // Thread.Sleep(1000);
+            receipt = await web3_instance.eth.getTransactionReceipt(currentTransactionHash);
+        }
+        // console.log(receipt)
+        var topics = receipt.logs[0].topics
+        // console.log(topics)
+        var data = receipt.logs[0].data
+        // console.log(data)
+        
+        if (!rightSession(topics[1], Number(sessionID))) {
             alert("Not right session with the Transaction Hash")
             return false
         }
@@ -25,11 +33,12 @@ export function tracebackThroughBlockChain(transaction, chainIndex, sessionID, w
         }else if (isItHandoff(topics[0])) {
             values = handleHandoffEvent(data)
             currentTransactionHash = values[2]
+            console.log(currentTransactionHash)
             currentChain = values[3]
 
         }else if (isItEndSession(topics[0])){
             values = handleEndEvent(data)
-            currentTransactionHash = values[1]
+            currentTransactionHash = "0x" + values[1]
 
         }else if (isItSensorLog(topics[0])) {
             console.log("found a sensor log at chain: " + currentChain + 
@@ -45,8 +54,7 @@ export function tracebackThroughBlockChain(transaction, chainIndex, sessionID, w
 
 // check if the session of this transaction hash is the one that needs to be tracebacked
 function rightSession(topic, sessionID) {
-    var hexString = bytesToHex(topic)
-    var session = parseInt(hexString, 16)
+    var session = parseInt(topic, 16)
     return (session === sessionID)
 }
 
@@ -83,39 +91,38 @@ function handleEndEvent(data) {
 
 
 function isItStartSession(eventSignature) {
-    var hash = keccak256('StartOfSession(uint256,uint32,uint256)').toString('hex')
-    // var hash = Crypto.createHash('keccak256').update("StartOfSession(uint256,uint32,uint256)").digest('hex');
+    // keccak256('StartOfSession(uint256,uint32,uint256)').toString('hex')
+    var hash = "0x1bf43c4e75a7bff085adfa4cd1169f72e357c0b294df3682aa5e0a846fb49530"
     return (eventSignature === hash)
 }
 
 
 function isItHandoff(eventSignature) {
-    var hash = keccak256('Handoff(uint256,uint32,uint32,bytes32,uint32,uint256)').toString('hex')
-    // var hash = crypto.createHash('keccak256').update("Handoff(uint256,uint32,uint32,bytes32,uint32,uint256)").digest('hex');
-    return (eventSignature === hash)
+    // keccak256('Handoff(uint256,uint32,uint32,bytes32,uint32,uint256)').toString('hex')
+    var hash = "0x86d35a3e42d5a887505753c1790979e2cae4b70139b38a8e87e398deed56298f"
 }
 
 
 function isItEndSession(eventSignature) {
-    var hash = keccak256('EndOfSession(uint256,uint32,bytes32,uint256)').toString('hex')
-    // var hash = crypto.createHash('keccak256').update("EndOfSession(uint256,uint32,bytes32,uint256)").digest('hex');
+    // keccak256('EndOfSession(uint256,uint32,bytes32,uint256)').toString('hex')
+    var hash = "0xd10cf7e55fd1ee438dcbd3db7f77f6cf1e212df7868df78c9b21682b046b67b6"
     return (eventSignature === hash)
 }
 
 
 function isItSensorLog(eventSignature) {
-    var hash = keccak256('SensorLog(uint256,uint256,string)').toString('hex')
-    // var hash = crypto.createHash('keccak256').update("SensorLog(uint256,uint256,string)").digest('hex');
+    // keccak256('SensorLog(uint256,uint256,string)').toString('hex')
+    var hash = "0x4303a873fbd8b09c053de5da9bd4246acb454c5c47b33a1446844caf71f86059"
     return (eventSignature === hash)
 }
 
 
-// Convert a hex string to a byte array
-function hexToBytes(hex) {
-    for (var bytes = [], c = 0; c < hex.length; c += 2)
-    bytes.push(parseInt(hex.substr(c, 2), 16));
-    return bytes;
-}
+// // Convert a hex string to a byte array
+// function hexToBytes(hex) {
+//     for (var bytes = [], c = 0; c < hex.length; c += 2)
+//     bytes.push(parseInt(hex.substr(c, 2), 16));
+//     return bytes;
+// }
 
 // Convert a byte array to a hex string
 function bytesToHex(bytes) {
