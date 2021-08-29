@@ -18,6 +18,8 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
             alert("Not right session with the Transaction Hash")
             return false
         }
+        
+        transactionsChecked.push(currentTransactionHash)
 
         if (isItStartSession(topics[0])) {
             values = handleStartEvent(data)
@@ -49,7 +51,6 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
         }
 
         console.log(values)
-        transactionsChecked.push(currentTransactionHash)
     }
     console.log(transactionsChecked)
     return true

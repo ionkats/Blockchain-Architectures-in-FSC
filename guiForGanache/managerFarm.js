@@ -187,10 +187,10 @@ async function handOffTransaction() {
     // get the address and the smart contract object of the proper chain from the previous user
     var previousSmartContract = smartContractObjects[previousChainNumber]
     var previousSenderAddress = userAddresses[previousChainNumber][0]
-
+    console.log("In first handoff " + previousTransactionHash)
     try {
         // call the function from the smart contract for the previous user
-        var handOffTransactionObject = previousSmartContract.methods.handoff(
+        var handOffTransactionObject = await previousSmartContract.methods.handoff(
                                                 _sessionID,
                                                 previousUserID, // previous userID
                                                 _userID, // new userID
@@ -206,7 +206,7 @@ async function handOffTransaction() {
                                                     // stop the logging of sensors for this session
                                                     eval('clearInterval(window.session' + _sessionID + ')')
                                                 })
-        // the chain number from the new userID
+
         var newChainNumber = userToChainNumber(_userID)
 
         // get the address and the smart contract object of the proper chain from the new user
@@ -215,22 +215,22 @@ async function handOffTransaction() {
 
         console.log("second handoff the previous transaction hash is " + previousTransactionHash)
         // call the function from the smart contract for the new user
-        var handOffTransactionObject = newSmartContract.methods.handoff(
-                                                _sessionID,
-                                                previousUserID, // previous userID
-                                                _userID, // new userID
-                                                previousTransactionHash,
-                                                previousChainNumber // save the index of the previous chain
-                                                ).send({from: newSenderAddress})
-                                                .on('receipt', function(receipt) {
-                                                    console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User (" + _userID + ") to chain " + newChainNumber + ")")
-                                                    console.log("Second Handover previous transaction hash " + previousTransactionHash)
-                                                    sessionToUserID[_sessionID] = _userID // save new userID
-                                                    sessionToChain[_sessionID] = newChainNumber // save the number of the chain saved last
-                                                    sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
-                                                    // begin logging sensors from the other user's chain
-                                                    initializeSensors(_sessionID)
-                                                })
+        var handOffTransactionObject = await newSmartContract.methods.handoff(
+                                                            _sessionID,
+                                                            previousUserID, // previous userID
+                                                            _userID, // new userID
+                                                            previousTransactionHash,
+                                                            previousChainNumber // save the index of the previous chain
+                                                            ).send({from: newSenderAddress})
+                                                            .on('receipt', function(receipt) {
+                                                                console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User (" + _userID + ") to chain " + newChainNumber + ")")
+                                                                console.log("Second Handover previous transaction hash " + previousTransactionHash)
+                                                                sessionToUserID[_sessionID] = _userID // save new userID
+                                                                sessionToChain[_sessionID] = newChainNumber // save the number of the chain saved last
+                                                                sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
+                                                                // begin logging sensors from the other user's chain
+                                                                initializeSensors(_sessionID)
+                                                            })
     } catch (e) {
         console.error(e)
         alert(e.message)
