@@ -2,24 +2,17 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
     var currentChain = chainIndex
     var currentTransactionHash = transaction
     var tracebackDone = false
+    var transactionsChecked = [currentTransactionHash]
     while (!tracebackDone) {
         var values
         var web3_instance = web3Instances[currentChain]
-        // var receipt = web3_instance.eth.getTransactionReceipt(currentTransactionHash)
-        // console.log(receipt)
-        // console.log(receipt.getPastLogs)
-
         var receipt = await web3_instance.eth.getTransactionReceipt(currentTransactionHash);
 
         while(receipt == null){
-            // Thread.Sleep(1000);
             receipt = await web3_instance.eth.getTransactionReceipt(currentTransactionHash);
         }
-        // console.log(receipt)
         var topics = receipt.logs[0].topics
-        // console.log(topics)
         var data = receipt.logs[0].data
-        // console.log(data)
         
         if (!rightSession(topics[1], Number(sessionID))) {
             alert("Not right session with the Transaction Hash")
@@ -29,25 +22,36 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
         if (isItStartSession(topics[0])) {
             values = handleStartEvent(data)
             tracebackDone = true
+            values.unshift("Session " + sessionID)
+            values.unshift("Chain " + currentChain)
+            values.unshift("StartOfSession")
 
         }else if (isItHandoff(topics[0])) {
+            console.log("gotIn")
             values = handleHandoffEvent(data)
-            currentTransactionHash = values[2]
-            console.log(currentTransactionHash)
+            currentTransactionHash = "0x" + values[2]
             currentChain = values[3]
+            values.unshift("Session " + sessionID)
+            values.unshift("Chain " + currentChain)
+            values.unshift("Handoff")
 
         }else if (isItEndSession(topics[0])){
             values = handleEndEvent(data)
             currentTransactionHash = "0x" + values[1]
+            values.unshift("Session " + sessionID)
+            values.unshift("Chain " + currentChain)
+            values.unshift("EndOfSession")
 
         }else if (isItSensorLog(topics[0])) {
             console.log("found a sensor log at chain: " + currentChain + 
-                        "info" + web3_instance.eth.getTransactionReceipt(currentTransactionHash))
+                        "info" + receipt)
             return false
         }
 
         console.log(values)
+        transactionsChecked.push(currentTransactionHash)
     }
+    console.log(transactionsChecked)
     return true
 }
 
@@ -99,7 +103,8 @@ function isItStartSession(eventSignature) {
 
 function isItHandoff(eventSignature) {
     // keccak256('Handoff(uint256,uint32,uint32,bytes32,uint32,uint256)').toString('hex')
-    var hash = "0x86d35a3e42d5a887505753c1790979e2cae4b70139b38a8e87e398deed56298f"
+    var hash =  "0x86d35a3e42d5a887505753c1790979e2cae4b70139b38a8e87e398deed56298f"
+    return (eventSignature === hash)
 }
 
 
@@ -124,12 +129,12 @@ function isItSensorLog(eventSignature) {
 //     return bytes;
 // }
 
-// Convert a byte array to a hex string
-function bytesToHex(bytes) {
-    for (var hex = [], i = 0; i < bytes.length; i++) {
-        var current = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
-        hex.push((current >>> 4).toString(16));
-        hex.push((current & 0xF).toString(16));
-    }
-    return hex.join("");
-}
+// // Convert a byte array to a hex string
+// function bytesToHex(bytes) {
+//     for (var hex = [], i = 0; i < bytes.length; i++) {
+//         var current = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
+//         hex.push((current >>> 4).toString(16));
+//         hex.push((current & 0xF).toString(16));
+//     }
+//     return hex.join("");
+// }
