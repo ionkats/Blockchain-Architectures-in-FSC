@@ -5,6 +5,7 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
     var transactionsChecked = [currentTransactionHash]
     while (!tracebackDone) {
         var values
+        console.log(currentChain)
         var web3_instance = web3Instances[currentChain]
         var receipt = await web3_instance.eth.getTransactionReceipt(currentTransactionHash);
 
@@ -29,14 +30,13 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
             values.unshift("StartOfSession")
 
         }else if (isItHandoff(topics[0])) {
-            console.log("gotIn")
             values = handleHandoffEvent(data)
             currentTransactionHash = "0x" + values[2]
-            currentChain = values[3]
             values.unshift("Session " + sessionID)
             values.unshift("Chain " + currentChain)
             values.unshift("Handoff")
-
+            currentChain = values[6]
+            
         }else if (isItEndSession(topics[0])){
             values = handleEndEvent(data)
             currentTransactionHash = "0x" + values[1]
@@ -121,21 +121,3 @@ function isItSensorLog(eventSignature) {
     var hash = "0x4303a873fbd8b09c053de5da9bd4246acb454c5c47b33a1446844caf71f86059"
     return (eventSignature === hash)
 }
-
-
-// // Convert a hex string to a byte array
-// function hexToBytes(hex) {
-//     for (var bytes = [], c = 0; c < hex.length; c += 2)
-//     bytes.push(parseInt(hex.substr(c, 2), 16));
-//     return bytes;
-// }
-
-// // Convert a byte array to a hex string
-// function bytesToHex(bytes) {
-//     for (var hex = [], i = 0; i < bytes.length; i++) {
-//         var current = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
-//         hex.push((current >>> 4).toString(16));
-//         hex.push((current & 0xF).toString(16));
-//     }
-//     return hex.join("");
-// }
