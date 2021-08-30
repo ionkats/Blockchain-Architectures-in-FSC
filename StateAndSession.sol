@@ -48,7 +48,6 @@ contract StateAndSession {
                 _userID, 
                 block.timestamp
             );
-            activeSessions[sessionID] = true;
     }
 
     function handoff(
@@ -69,8 +68,9 @@ contract StateAndSession {
                 );
     }
 
-    function getNextSessionID() internal returns(uint256) { 
+    function getNextSessionID() public returns(uint256) { 
         sessionID += 1;
+        activeSessions[sessionID] = true;
         return sessionID;
     }
 
@@ -93,6 +93,7 @@ contract StateAndSession {
         );
         activeSessions[_sessionID] = false;
     }
+
 
     // function migratingUser(uint256 _userID, uint32 chainIndex) external {
     //     emit migration(_userID, chainIndex, block.timestamp);
