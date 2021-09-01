@@ -3,12 +3,6 @@ import {initializeWithoutData} from "./initializerWithoutData.js"
 import {random} from "./initializerWithoutData.js"
 import {tracebackThroughBlockChain} from "./traceback.js"
 
-// put the address of the deployed smart contracts here
-// var smartContractAddresses = []
-// var smartContractObjects = []
-// var userAddresses = []
-// var web3Instances = []
-
 // uncomment to initialize the servers and get the addresses of already deployed contracts 
 
 var data = initialize()
@@ -29,6 +23,7 @@ setTimeout(function () {
 // }, 31000) // wait for 31 seconds for the contracts to be surely deployed (block every 30s)
 
 
+// put the address of the deployed smart contracts here
 var userAddresses = data[0]
 var smartContractObjects =data[1] 
 var smartContractAddresses = data[2]
@@ -50,6 +45,7 @@ var sessionToTransactionHash = {} // dictionary key:sessionID, value: previous t
 var transactionData = []
 var sessionToChain = {}
 var firstHandoff = true
+console.log(userAddresses)
 
 
 // listen to all events from all the servers
@@ -135,7 +131,6 @@ async function startTransaction() {
     // get the address and the smart contract object of the proper chain
     var smartContract = smartContractObjects[chainNumber]
     var senderAddress = userAddresses[chainNumber][0]
-    var webInstance = web3Instances[chainNumber]
     try {
         // call the function from the smart contract
         var startTransactionObject = smartContract.methods.startSession(userID)
@@ -162,6 +157,9 @@ async function startTransaction() {
 async function handOffTransaction() {
     if (!deployed) {
         alert("Wait a little bit more for the contracts to be deployed")
+        return
+    } else if (!firstHandoff) {
+        console.log("The second handoff transaction hasn't been mined yet, try again for handing off this session.")
         return
     }
     var _sessionID = document.getElementById("Handoff-sessionId").value
@@ -203,7 +201,6 @@ async function handOffTransaction() {
                                                 })
 
         var newChainNumber = userToChainNumber(newuserID)
-        console.log("New Chain Number " + newChainNumber)
 
         // get the address and the smart contract object of the proper chain from the new user
         var newSmartContract = smartContractObjects[newChainNumber]
@@ -238,6 +235,9 @@ async function handOffTransaction() {
 async function endTransaction() {
     if (!deployed) {
         alert("Wait a little bit more for the contracts to be deployed")
+        return
+    } else if (!firstHandoff) {
+        console.log("The second handoff transaction hasn't been mined yet, try again for ending this session.")
         return
     }
     var _sessionID = document.getElementById("endSession-sessionId").value
@@ -347,16 +347,12 @@ function userToChainNumber(userID) {
 
 
 function coverAllContracts(chainNumber) {
-    console.log("chain " + chainNumber)
     for (var i = 0; i < numberOfServers; i++) {
         if (i === chainNumber) {
             continue
         } else {
             var smartContract = smartContractObjects[i]
-            console.log(i)
             var senderAddress = userAddresses[i][0]
-            console.log(userAddresses)
-            console.log(senderAddress)
             var transactionObject = smartContract.methods.getNextSessionID()
                                                          .send({from: senderAddress})
         }
