@@ -19,13 +19,13 @@ export function initializeWithoutData() {
     saveAccountsDeployContract(web3_0, stateandsessionContract_0, 0)
 
 
-    var web3_1 = new Web3('ws://localhost:8541')
-    var stateandsessionContract_1 = new web3_1.eth.Contract(contractABI)
-    saveAccountsDeployContract(web3_1, stateandsessionContract_1, 1)
+    // var web3_1 = new Web3('ws://localhost:8541')
+    // var stateandsessionContract_1 = new web3_1.eth.Contract(contractABI)
+    // saveAccountsDeployContract(web3_1, stateandsessionContract_1, 1)
 
-    var web3_2 = new Web3('ws://localhost:8542')
-    var stateandsessionContract_2 = new web3_2.eth.Contract(contractABI)
-    saveAccountsDeployContract(web3_2, stateandsessionContract_2, 2)
+    // var web3_2 = new Web3('ws://localhost:8542')
+    // var stateandsessionContract_2 = new web3_2.eth.Contract(contractABI)
+    // saveAccountsDeployContract(web3_2, stateandsessionContract_2, 2)
 
     // var web3_3 = new Web3('ws://localhost:8543')
     // var stateandsessionContract_3 = new web3_3.eth.Contract(contractABI)

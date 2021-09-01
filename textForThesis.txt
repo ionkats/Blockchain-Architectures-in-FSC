@@ -1,0 +1,65 @@
+We implemented a real time food supply chain on the blockchain environment using javascript, web3js, the Ganache environment and a simple UI for 
+optimization. 
+First of all, the food supply chain for a specified product almost never has a stable number of stages. For example there mey be need for further 
+transportation of storaging of the product and thus there should me additional stages.  
+
+That is the reason why our architecture is based on implementing the FSC for a variable number k of stages. By having a manager or load balancer 
+or coordinator the organizations firstly communicate, through the UI, with the manager and save their transactions on the specified chain number 
+they aquired from him. 
+
+Our smart contract consists of 4 events and functions. 
+1) Start session where the sessionID number is set and saved automatically for this session, and 
+we save the userID of the caller and the timestamp of the time the transaction is mined.
+2) Handoff Session where we save the sessionID, the previousUserID, the newUserID, the index of the chainInstance where the previous transaction 
+was mined and the hash of the previous transaction.
+3) EndSession where the SessionID, the userID and the hash of the previous transaction mined for this session (not including sensor transactions)
+are saved.
+4) SensorLog where the sessionID and the information of the log are saved and emitted to an event in the appropriate chain.
+
+With the call of the startSession method of our smart contract new session is initiated and activated and an event is 
+emitted at the chain where the block of the transaction is mined. Instantaneously a sensor log interval is initiated and every 5 seconds a 
+trnasaction for logging some data of the session items are passed to pending transactions and are included in the next block. We decided that 
+on average there would be 3 sensors per sessionID and every sensor would send a data log every 15 seconds. (2 or 1 per block for every sensor 
+based on block mining time). 
+
+When activating a handoff two transactions are passed to (possibly) different chains. First a transction at the chain of the previous user which
+hand over the session, and a transaction at the chain of the new user which receives the session. The sensor intervals are transferred to the 
+chain of the new user accordingly.
+
+When ending a session the transaction is passed to the chain of the user and the sensor log interval is ceased. The last transaction hash is 
+saved externaly for future traceback use of the session. 
+
+
+
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+Manager
+
+The use of the manager provides a scaling impementation of the food supply chain. He playes the role of the load balancer and thus assists in 
+having various amount of stages per session. Based on the user ids each user/organization has a specified blockchain where they will send 
+their transactions. In case of extreme load on a specific chain some users may have to move their future transactions to another chain and this  
+πρωτοβουλια will be taken by the manager. In a case where the last 5 blocks use over the 90 percent of their capacity then any future users trying 
+to send transactions to this chain will be moved to another chain specified by the manager. Another example of a heavy load of a chain is when 
+there are transactions that remain on pending after the mining of a new block due to the block gas limit. This implies that the manager is utilized
+only in situations of heavy load.
+
+
+Anchoring
+
+In every private blockchain application there is the question whether the data and the transactions are valid and not changed(άλλη λέξη). On an 
+application where there is a single or multiple private blockchains used the truth is that there is a (μη αμελητέα) probability that a user with 
+acces can overpower the rest and create a winning fork with his data of choice. To avoid this (πρόβλημα ελλειψης εμπιστοσύνης) in our architecture
+we include the process of anchoring. The key idea is to save some data of the private blockchain to a public ledger in order to assess validity of 
+the chains. On every active private chain, the hash of the block mined is passed to the Ethereum public ledger and the data are further checked 
+to match with the hashes of the blocks from the private chains. In case the hashes are different there is a validity error of the data from the 
+private blockchain and the transaction data received from the problematic and the future blocks are not to be trusted. Because of the type of the
+data that are to be saved on the public ledger this is not an expensive process. For example by having 10 provate blockchains running at the same 
+time and each one has a block mine time of 15 seconds. Then every 30 secods a transaction of a text which includes 10*2 = 20 hashes is passed on to
+the ethereum public ledger. Based on the Ethereum price of August 2021 we have that it costs approximatelly $$$$ every 30 seconds.
+
+There could also be an alteration of the frequency of the anchoring based on the number of sessions active to each chain. Considering that with 
+larger the amount of active sessions to a chain there is move user power to overpass in order to create a fork on the chain. Don't know if I 
+should include this on the thesis. 
+
+

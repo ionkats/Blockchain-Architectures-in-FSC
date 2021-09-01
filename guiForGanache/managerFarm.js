@@ -317,6 +317,14 @@ async function traceback() {
 }
 
 
+async function getChainNumber(sessionID) {
+    // var transactionHash = sessionToTransactionHash[sessionID]
+    return sessionToChain[sessionID]
+    // we have to get the chain number from the transaction data, not from the userToChainNumber function. 
+    // just in case to not give that amount of independence and auhorization to the manager 
+}
+
+
 // I want a function f: [9] -> [#servers] => f(x) = floor[x / (10/#servers)] with a max amount of servers of 10           
 // e.g. for 2 servers f(4) = 4/5 = floor(0.8) = 0, f(5) = 1 => {0,1,2,3,4}->0, {5,6,7,8,9}->1
 //      for 3 servers f(3) = fl(3/3.33) = 0, f(4) = 4/3.33 = 1, f(7) = 7/3.33 = 2 => {0,1,2,3}->0, {4,5,6}->1, {7,8,9}->2

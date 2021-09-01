@@ -1,11 +1,14 @@
 export async function tracebackThroughBlockChain(transaction, chainIndex, sessionID, web3Instances) {
+
+    //must find a way to get the traceback without external saving of data (last trasactionHash/ chain index of the end session transaction)
+    
     var currentChain = chainIndex
     var currentTransactionHash = transaction
     var tracebackDone = false
     var transactionsChecked = [currentTransactionHash]
     while (!tracebackDone) {
         var values
-        console.log(currentChain)
+        // console.log(currentChain)
         var web3_instance = web3Instances[currentChain]
         var receipt = await web3_instance.eth.getTransactionReceipt(currentTransactionHash);
 
@@ -52,7 +55,7 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
 
         console.log(values)
     }
-    console.log(transactionsChecked)
+    // console.log(transactionsChecked)
     return true
 }
 

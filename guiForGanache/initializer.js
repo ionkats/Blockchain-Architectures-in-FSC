@@ -34,8 +34,8 @@ export function initialize() {
     var web3_0 = new Web3('ws://localhost:8540')
     pushData(web3_0, contract0)
 
-    var web3_1 = new Web3('ws://localhost:8541')
-    pushData(web3_1, contract1)
+    // var web3_1 = new Web3('ws://localhost:8541')
+    // pushData(web3_1, contract1)
 
     // var web3_2 = new Web3('ws://localhost:8542')
     // pushData(web3_2, contract2)
@@ -69,7 +69,7 @@ export function initialize() {
 function pushData(web3_instance, contractAdr) {
     counter++
     web3_instance.eth.getAccounts().then( fetchedAccounts => {
-        console.log(fetchedAccounts)
+        // console.log(fetchedAccounts)
         addresses.push(fetchedAccounts)
             })
     contractAddresses.push(contractAdr)
