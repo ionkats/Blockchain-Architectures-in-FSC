@@ -38,14 +38,20 @@ const endSessionButton = document.getElementById("endSession-button")
 const HandoffButton = document.getElementById("Handoff-button")
 const tracebackButton = document.getElementById("Traceback-button")
 
-var activeSessions = []
+
+var activeSessionsPerChain = {}
 var sessionToUserID = {} // key: sessionID, value: current UserID for sanity checks of handoffs
 var sessionToTransactionHash = {} // dictionary key:sessionID, value: previous transaction hash that it passed
-// a queue of transaction data for the traceback
-var transactionData = []
 var sessionToChain = {}
 var firstHandoff = true
-console.log(userAddresses)
+// the userID that change chains are saved here
+var changedUsers = {}
+
+
+// initialize the active sessions per chain
+for( var i=0; i < numberOfServers; i++) {
+    activeSessionsPerChain[i] = 0
+}
 
 
 // listen to all events from all the servers
@@ -72,10 +78,8 @@ function specifiedEventHandler(handler) {
 
 
 async function startSessionEvent(values) {
-    values["nameOfEvent"] = "startSession"
-    values["chain"] = userToChainNumber(Number(values.userID))
-    transactionData.push(values)
-    activeSessions.push(values.sessionID)
+    var chainNumber = userToChainNumber(Number(values.userID))
+    activeSessionsPerChain[chainNumber] += 1
 }
 
 
@@ -83,22 +87,20 @@ async function startSessionEvent(values) {
 async function handoffEvent(values) {
     values["nameOfEvent"] = "handoff"
     if (firstHandoff) {
-        values["chain"] = userToChainNumber(Number(values.previousUserID))
+        var previousChainNumber = userToChainNumber(Number(values.previousUserID))
+        activeSessionsPerChain[previousChainNumber] -= 1
         firstHandoff = false
     } else {
-        values["chain"] = userToChainNumber(Number(values.newUserID))
+        var newChainNumber = userToChainNumber(Number(values.newUserID))
+        activeSessionsPerChain[newChainNumber] += 1
         firstHandoff = true
     }
-    transactionData.push(values)
 }
 
 
 async function endSessionEvent(values) { 
-    values["nameOfEvent"] = "endSession"
-    values["chain"] = userToChainNumber(Number(values.userID))
-    transactionData.push(values)
-    var sessionIndex = activeSessions.indexOf(values.sessionID)
-    activeSessions.splice(sessionIndex, 1)
+    var chainNumber = userToChainNumber(Number(values.userID))
+    activeSessionsPerChain[chainNumber] -= 1
 }
 
 
@@ -317,14 +319,6 @@ async function traceback() {
 }
 
 
-async function getChainNumber(sessionID) {
-    // var transactionHash = sessionToTransactionHash[sessionID]
-    return sessionToChain[sessionID]
-    // we have to get the chain number from the transaction data, not from the userToChainNumber function. 
-    // just in case to not give that amount of independence and auhorization to the manager 
-}
-
-
 // I want a function f: [9] -> [#servers] => f(x) = floor[x / (10/#servers)] with a max amount of servers of 10           
 // e.g. for 2 servers f(4) = 4/5 = floor(0.8) = 0, f(5) = 1 => {0,1,2,3,4}->0, {5,6,7,8,9}->1
 //      for 3 servers f(3) = fl(3/3.33) = 0, f(4) = 4/3.33 = 1, f(7) = 7/3.33 = 2 => {0,1,2,3}->0, {4,5,6}->1, {7,8,9}->2
@@ -341,8 +335,12 @@ function getFirstDigit(id) {
 
 // get the first digit of the userID and match it to a number from 0 to numberOfServers
 function userToChainNumber(userID) {
-    var firstDigit = getFirstDigit(userID)
-    return (digitToServer(firstDigit))
+    if (changedUsers[userID] !== undefined) {
+        var chainFromUser = changedUsers[userID]
+    } else {
+        var chainFromUser = digitToServer(getFirstDigit(userID))
+    }
+    return chainFromUser
 }
 
 
@@ -357,4 +355,9 @@ function coverAllContracts(chainNumber) {
                                                          .send({from: senderAddress})
         }
     }
+}
+
+
+function checkLoadOnChain() {
+    
 }
