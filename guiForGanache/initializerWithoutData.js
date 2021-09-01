@@ -71,9 +71,9 @@ function saveAccountsDeployContract(web3_instance, stateandsessionContract, i) {
                                                             console.log('Contract mined for chain ' + i +'. Address: ' + contractCreated.options.address)
                                                             contractAddresses.push(contractCreated.options.address)
                                                             contractObjects.push(new web3_instance.eth.Contract(contractABI, contractCreated.options.address))
-                                                        })
+                                                            web3Instances.push(web3_instance)
+                                                    })
                                             })
-    web3Instances.push(web3_instance)
 }
 
 
