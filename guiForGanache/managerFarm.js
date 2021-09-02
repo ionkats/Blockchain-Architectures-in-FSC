@@ -5,22 +5,22 @@ import {tracebackThroughBlockChain} from "./traceback.js"
 
 // uncomment to initialize the servers and get the addresses of already deployed contracts 
 
-var data = initialize()
-var deployed = false
-setTimeout(function () {
-    deployed = true
-    listenAllEvents()
-}, 2000) // wait for 2 seconds for the addresses to be surely fetched
-
-
-// uncomment to initialize servers and deploy the contracts from scratch
-
-// var data = initializeWithoutData()
+// var data = initialize()
 // var deployed = false
 // setTimeout(function () {
 //     deployed = true
 //     listenAllEvents()
-// }, 31000) // wait for 31 seconds for the contracts to be surely deployed (block every 30s)
+// }, 2000) // wait for 2 seconds for the addresses to be surely fetched
+
+
+// uncomment to initialize servers and deploy the contracts from scratch
+
+var data = initializeWithoutData()
+var deployed = false
+setTimeout(function () {
+    deployed = true
+    listenAllEvents()
+}, 31000) // wait for 31 seconds for the contracts to be surely deployed (block every 30s)
 
 
 // put the address of the deployed smart contracts here
@@ -38,7 +38,7 @@ const endSessionButton = document.getElementById("endSession-button")
 const HandoffButton = document.getElementById("Handoff-button")
 const tracebackButton = document.getElementById("Traceback-button")
 
-
+const GASLIMIT = 15000000
 var activeSessionsPerChain = {}
 var sessionToUserID = {} // key: sessionID, value: current UserID for sanity checks of handoffs
 var sessionToTransactionHash = {} // dictionary key:sessionID, value: previous transaction hash that it passed
@@ -126,7 +126,7 @@ async function startTransaction() {
     var userID = createUserID()
 
     // the the chain number from the userID
-    var chainNumber = userToChainNumber(userID)
+    var chainNumber = getChainIndex(userID)
 
     coverAllContracts(chainNumber)
 
@@ -202,7 +202,7 @@ async function handOffTransaction() {
                                                     eval('clearInterval(window.session' + _sessionID + ')')
                                                 })
 
-        var newChainNumber = userToChainNumber(newuserID)
+        var newChainNumber = getChainIndex(newuserID)
 
         // get the address and the smart contract object of the proper chain from the new user
         var newSmartContract = smartContractObjects[newChainNumber]
@@ -335,15 +335,17 @@ function getFirstDigit(id) {
 
 // get the first digit of the userID and match it to a number from 0 to numberOfServers
 function userToChainNumber(userID) {
-    if (changedUsers[userID] !== undefined) {
-        var chainFromUser = changedUsers[userID]
+    var chainFromUser
+    if (changedUsers[userID] === undefined) {
+        chainFromUser = digitToServer(getFirstDigit(userID))
     } else {
-        var chainFromUser = digitToServer(getFirstDigit(userID))
+        chainFromUser = changedUsers[userID]
     }
     return chainFromUser
 }
 
 
+// activate the session on all contratcs, for avoiding future errors on revert of transactions due to inactive session (eg handoff to different chain)
 function coverAllContracts(chainNumber) {
     for (var i = 0; i < numberOfServers; i++) {
         if (i === chainNumber) {
@@ -358,6 +360,54 @@ function coverAllContracts(chainNumber) {
 }
 
 
-function checkLoadOnChain() {
+// get the chain number of this user by checking the load on the chain assigned to it
+function getChainIndex(userID) {
+    var validLoadNotFound = false
+    var currentChain = userToChainNumber(userID)
+    var _web3 = web3Instances[currentChain]
+
+    if (decentLoadOnChain(_web3)) {
+        return currentChain
+    } 
+    var chain = 0
+
+    while (true) {
+        if (chain >= web3Instances.length) {
+            validLoadNotFound = true
+            break
+        } else if ((chain === currentChain)) {
+            chain += 1
+        } else {
+            if (decentLoadOnChain(web3Instances[chain])) {
+                console.log("User " + userID + " moved to chain " + chain)
+                changedUsers[userID] = chain
+                return chain
+            }
+        }
+    }
+
+    if (validLoadNotFound) {
+        alert("You have to create a new server, everything is almost fully loaded")
+        return
+    } else {
+        alert("An error on the getChainIndex function, it does not work")
+        return
+    }
     
+}
+
+
+// check if over 90% of gas is used on the last 2 blocks
+async function decentLoadOnChain(web3_instance) {
+    var result = true
+    var blockNumber = await web3_instance.eth.getBlock("latest")
+
+    for (var i=0; i < 1; i++) {
+        var blockData = await web3_instance.eth.getBlock(blockNumber.number - i)
+        // console.log(blockData)
+        if (blockData.gasUsed > 0.90*GASLIMIT) {
+            result = false
+        } 
+    }
+    return result
 }

@@ -3,11 +3,11 @@ import contractABI from "./ABI.js"
 // deployment of the contracts for every web3 provider needed from the Remix environment
 
 // data for server 0
-var contract0 = "0xfac6463DD5658ddFb4BA6992d059A33fd936aEaF"
+var contract0 = "0x255DC27dE77d0ee7Ffc1645c8Ab87Aa024D13fb4"
 // data for server 1
-var contract1 = "0x1C04ec2A594257ce47390f2A38757504614f4cd2"
+var contract1 = "0x441136332FB9cE441D5527E1CB7eae6A63cED03b"
 // data for server 2
-var contract2 = "0xA58307e8309E5d1c5027B5f78A3DD8Cd7D577B52"
+var contract2 = "0xEf5Ee6bff03Db5288cc7a75b3A2928D944Fc55C4"
 // data for server 3
 var contract3 = ""
 // data for server 4
@@ -34,11 +34,11 @@ export function initialize() {
     var web3_0 = new Web3('ws://localhost:8540')
     pushData(web3_0, contract0)
 
-    var web3_1 = new Web3('ws://localhost:8541')
-    pushData(web3_1, contract1)
+    // var web3_1 = new Web3('ws://localhost:8541')
+    // pushData(web3_1, contract1)
 
-    var web3_2 = new Web3('ws://localhost:8542')
-    pushData(web3_2, contract2)
+    // var web3_2 = new Web3('ws://localhost:8542')
+    // pushData(web3_2, contract2)
 
     // var web3_3 = new Web3('ws://localhost:8543')
     // pushData(web3_3, contract3)

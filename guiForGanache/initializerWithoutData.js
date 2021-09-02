@@ -63,7 +63,6 @@ function saveAccountsDeployContract(web3_instance, stateandsessionContract, i) {
     counter++
     web3_instance.eth.getAccounts().then( fetchedAccounts => {
                                         // console.log(fetchedAccounts)
-                                        addresses.push(fetchedAccounts)
                                         var max = fetchedAccounts.length
                                         stateandsessionContract.deploy({data: contractData, arguments: []})
                                                         .send({from: fetchedAccounts[random(0, max)], gas: '15000000'})
@@ -72,6 +71,7 @@ function saveAccountsDeployContract(web3_instance, stateandsessionContract, i) {
                                                             contractAddresses.push(contractCreated.options.address)
                                                             contractObjects.push(new web3_instance.eth.Contract(contractABI, contractCreated.options.address))
                                                             web3Instances.push(web3_instance)
+                                                            addresses.push(fetchedAccounts)
                                                     })
                                             })
 }
