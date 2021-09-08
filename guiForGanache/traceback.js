@@ -124,3 +124,34 @@ function isItSensorLog(eventSignature) {
     var hash = "0x4303a873fbd8b09c053de5da9bd4246acb454c5c47b33a1446844caf71f86059"
     return (eventSignature === hash)
 }
+
+
+export function searchForEndSession(sessionID, contracts, web3Instances) {
+    var found = false
+    var i = 0
+    var endSession = "0xd10cf7e55fd1ee438dcbd3db7f77f6cf1e212df7868df78c9b21682b046b67b6"
+    var sess = sessionID.toString(16);
+    while (!found) {
+        contracts[i].getPastEvents('EndOfSession', {
+                                        fromBlock: 'earliest',
+                                        toBlock: 'latest',
+                                        topics: [endSession, sess]})
+                    .then(function(events) {
+                        if (events.length === 0) {
+                            if (i < (contracts.length - 1)) {
+                                console.log("not found on chain " + i)
+                                i += 1
+                            } else {
+                                console.log("Filtering did not work, maybe the session hasn't ended.")
+                                found = true //for exiting the loop
+                            }
+                        } else if (events.length === 1) {
+                            console.log(events)
+                            found = true
+                        } else {
+                            console.log("Found more end event logs for this session.")
+                            found = true
+                        }
+                    })
+    }
+}
