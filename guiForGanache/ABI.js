@@ -101,7 +101,7 @@ export default [
 				"type": "uint256"
 			},
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "uint32",
 				"name": "companyID",
 				"type": "uint32"

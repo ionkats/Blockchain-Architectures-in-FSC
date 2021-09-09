@@ -22,7 +22,7 @@ contract StateAndSession {
 
     event SensorLog(
         uint256 indexed sessionID,
-        uint32 companyID,
+        uint32 indexed companyID,
         string info,
         uint256 time
     );
