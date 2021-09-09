@@ -2,7 +2,7 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
 
     //must find a way to get the traceback without external saving of data (last trasactionHash/ chain index of the end session transaction)
     
-    var currentChain = chainIndex
+    var currentChain = Number(chainIndex)
     var currentTransactionHash = transaction
     var tracebackDone = false
     var transactionsChecked = [currentTransactionHash]
@@ -126,32 +126,28 @@ function isItSensorLog(eventSignature) {
 }
 
 
-export function searchForEndSession(sessionID, contracts, web3Instances) {
+export async function searchForEndSession(sessionID, contracts) {
     var found = false
     var i = 0
-    var endSession = "0xd10cf7e55fd1ee438dcbd3db7f77f6cf1e212df7868df78c9b21682b046b67b6"
-    var sess = sessionID.toString(16);
     while (!found) {
-        contracts[i].getPastEvents('EndOfSession', {
+        var events = await contracts[i].getPastEvents('EndOfSession', {
                                         fromBlock: 'earliest',
-                                        toBlock: 'latest',
-                                        topics: [endSession, sess]})
+                                        toBlock: 'latest'})
                     .then(function(events) {
-                        if (events.length === 0) {
-                            if (i < (contracts.length - 1)) {
-                                console.log("not found on chain " + i)
-                                i += 1
-                            } else {
-                                console.log("Filtering did not work, maybe the session hasn't ended.")
-                                found = true //for exiting the loop
+                        for (var j = 0; j < events.length; j++) {
+                            if (parseInt(events[j].raw.topics[1]) === Number(sessionID)) {
+                                return [events[j].transactionHash, true]
                             }
-                        } else if (events.length === 1) {
-                            console.log(events)
-                            found = true
+                        }
+                        if (i < (contracts.length - 1)) {
+                            console.log("not found on chain " + i)
+                            i += 1
                         } else {
-                            console.log("Found more end event logs for this session.")
-                            found = true
+                            // console.log("Filtering did not work, maybe the session hasn't ended.")
+                            return ["", true] //for exiting the loop
                         }
                     })
+        found = events[1]
     }
+    return [i, events[0]]
 }

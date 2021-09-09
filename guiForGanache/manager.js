@@ -21,7 +21,7 @@ var deployed = false
 setTimeout(function () {
     deployed = true
     listenAllEvents()
-}, 16000) // wait for 31 seconds for the contracts to be surely deployed (block every 30s)
+}, 16000) // wait for 16 seconds for the contracts to be surely deployed (block every 15s)
 
 
 // put the address of the deployed smart contracts here
@@ -129,6 +129,10 @@ async function startTransaction() {
 
     // the the chain number from the userID
     var chainNumber = await getChainIndex(userID)
+    if (chainNumber === undefined) {
+        console.log("Not proceeding in activating any sessions")
+        return
+    }
     coverAllContracts(chainNumber)
 
     // get the address and the smart contract object of the proper chain
@@ -141,7 +145,7 @@ async function startTransaction() {
                                                 .then(function(receipt){ // called on event
                                                     // console.log(receipt)
                                                     var _sessionID = receipt.events.StartOfSession.returnValues.sessionID
-                                                    console.log("Session "+ _sessionID + " Activated. TX send to server: " + chainNumber + " from user: " + userID)
+                                                    console.log("Session "+ _sessionID + " Activated to chain index: " + chainNumber + " from user: " + userID)
                                                     sessionToUserID[_sessionID] = userID
                                                     sessionToTransactionHash[_sessionID] = receipt.transactionHash
                                                     sessionToChain[_sessionID] = chainNumber // save the number of the chain saved last
@@ -198,7 +202,7 @@ async function handOffTransaction() {
                                                 previousChainNumber // save the index of the previous chain
                                                 ).send({from: previousSenderAddress})
                                                 .on('receipt', function(receipt) {
-                                                    console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User (" + previousUserID + ") to chain " + previousChainNumber + ")")
+                                                    console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User (" + previousUserID + ") to chain index" + previousChainNumber + ")")
                                                     sessionToUserID[_sessionID] = newuserID // save new userID
                                                     previousTransactionHash = receipt.transactionHash
                                                     sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
@@ -221,7 +225,7 @@ async function handOffTransaction() {
                                                             previousChainNumber // save the index of the previous chain
                                                             ).send({from: newSenderAddress})
                                                             .on('receipt', function(receipt) {
-                                                                console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User (" + newuserID + ") to chain " + newChainNumber + ")")
+                                                                console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User (" + newuserID + ") to chain index" + newChainNumber + ")")
                                                                 sessionToUserID[_sessionID] = newuserID // save new userID
                                                                 sessionToChain[_sessionID] = newChainNumber // save the number of the chain saved last
                                                                 sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
@@ -270,7 +274,7 @@ async function endTransaction() {
         var endTransactionObject = smartContract.methods.endSession(_sessionID, userID, previousTransactionHash)
                                             .send({from: senderAddress})
                                             .on('receipt', function(receipt) {
-                                                console.log("Session "+ _sessionID + " Ended. TX send to server: " + chainNumber + " from user: " + userID)
+                                                console.log("Session "+ _sessionID + " Ended to chain index: " + chainNumber + " from user: " + userID)
                                                 sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
                                             })
     } catch (e) {
@@ -311,17 +315,21 @@ function createUserID() {
 async function initializeSensors(_sessionID) {
     // console.log("Initialize sensors for session" + _sessionID + ".")
     // repeat the interval session1, session2, etc very 5000milsec = 5sec.
-    //window.variableName saves a global variable with dynamic naming for clearing the interval from another function
+    // window.variableName saves a global variable with dynamic naming for clearing the interval from another function
     eval('window.session' + _sessionID + ' = ' + setInterval(function() { sensorTransaction(_sessionID) }, 5000))
 }
 
 
 async function traceback() {
     var sessionID = document.getElementById("Traceback-sessionId").value
-    
-    tracebackThroughBlockChain(sessionToTransactionHash[sessionID], sessionToChain[sessionID], sessionID, web3Instances)
 
-    // searchForEndSession(sessionID, smartContractObjects, web3Instances)
+    var result = await searchForEndSession(sessionID, smartContractObjects)
+    if (result[1] === "") {
+        console.log("The session hasn't ended yet")
+        return
+    }
+    tracebackThroughBlockChain(result[1], result[0], sessionID, web3Instances)
+
     // reset value to the placeholder
     document.getElementById("Traceback-sessionId").value = ""
 }
@@ -373,33 +381,37 @@ async function getChainIndex(userID) {
     var validLoadNotFound = false
     var currentChain = userToChainNumber(userID)
     var _web3 = web3Instances[currentChain]
+    
+    // check the load on the chain assigned to the user
     var firstResult = await decentLoadOnChain(_web3).then( function (result) {
                                         if (result) {
+                                            // console.log("got in")
                                         }
                                         return result
                                     })    
-    
     if (firstResult) {
         return currentChain
     }
-    var chain = 1
+
+    // check the load on the rest of the active chains, return the first valid
+    var chain = 0
     while (true) {
-        if (chain >= web3Instances.length) {
+        if (chain >= numberOfServers) {
             validLoadNotFound = true
             break
-        } else {
+        } else if (chain != currentChain) {
             var currentResult = await decentLoadOnChain(web3Instances[chain]).then( function (result) {
                                                                                         if (result) {
                                                                                             console.log("User " + userID + " moved to chain " + chain)
                                                                                             changedUsers[userID] = chain
                                                                                         }
-                return result
-            }) 
+                                                                                        return result
+                                                                                    }) 
             if (currentResult) {
                 return chain
             }
-            chain += 1
         }
+        chain += 1
     }
 
     if (validLoadNotFound) {
@@ -409,15 +421,14 @@ async function getChainIndex(userID) {
         alert("An error at the getChainIndex function, needs debugging.")
         return
     }
-    
 }
 
 
-// check if over 90% of gas is used on the last 2 blocks
+// check if over 85% of gas is used on the last 2 blocks
 async function decentLoadOnChain(web3_instance) {
     var result = true
     var blockNumber = await web3_instance.eth.getBlock("latest")
-    for (var i=0; i < 1; i++) {
+    for (var i=0; i < 4; i++) {
         var blockData = await web3_instance.eth.getBlock(blockNumber.number - i).then(function (block) {
                                                                                             if (block.gasUsed > 0.85*GASLIMIT) {
                                                                                                 result = false
