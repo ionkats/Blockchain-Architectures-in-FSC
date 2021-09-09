@@ -42,12 +42,13 @@ const tracebackButton = document.getElementById("Traceback-button")
 // const GASLIMIT = 15000000
 const GASLIMIT = 2000000
 var activeSessionsPerChain = {}
+var sessionToCompanyID = {}// key: sessionID, value: current CompanyID
 var sessionToUserID = {} // key: sessionID, value: current UserID for sanity checks of handoffs
 var sessionToTransactionHash = {} // dictionary key:sessionID, value: previous transaction hash that it passed
 var sessionToChain = {}
 var firstHandoff = {}
 // the userID that change chains are saved here
-var changedUsers = {}
+var changedCompanies = {}
 
 
 // initialize the active sessions per chain
@@ -80,7 +81,7 @@ function specifiedEventHandler(handler) {
 
 
 async function startSessionEvent(values) {
-    var chainNumber = userToChainNumber(Number(values.userID))
+    var chainNumber = IDToChainNumber(Number(values.userID))
     activeSessionsPerChain[chainNumber] += 1
 }
 
@@ -89,11 +90,11 @@ async function startSessionEvent(values) {
 async function handoffEvent(values) {
     values["nameOfEvent"] = "handoff"
     if (firstHandoff[values.sessionID]) {
-        var previousChainNumber = userToChainNumber(Number(values.previousUserID))
+        var previousChainNumber = IDToChainNumber(Number(values.previousUserID))
         activeSessionsPerChain[previousChainNumber] -= 1
         firstHandoff[values.sessionID] = false
     } else {
-        var newChainNumber = userToChainNumber(Number(values.newUserID))
+        var newChainNumber = IDToChainNumber(Number(values.newUserID))
         activeSessionsPerChain[newChainNumber] += 1
         firstHandoff[values.sessionID] = true
     }
@@ -101,7 +102,7 @@ async function handoffEvent(values) {
 
 
 async function endSessionEvent(values) { 
-    var chainNumber = userToChainNumber(Number(values.userID))
+    var chainNumber = IDToChainNumber(Number(values.userID))
     activeSessionsPerChain[chainNumber] -= 1
 }
 
@@ -125,10 +126,12 @@ async function startTransaction() {
     }
     
     // creates a random 6-digits number of userID
-    var userID = createUserID()
+    var userID = createRandomID()
+    // creates a random 6-digits number of companyID
+    var companyID = createRandomID()
 
     // the the chain number from the userID
-    var chainNumber = await getChainIndex(userID)
+    var chainNumber = await getChainIndex(companyID)
     if (chainNumber === undefined) {
         console.log("Not proceeding in activating any sessions")
         return
@@ -140,12 +143,13 @@ async function startTransaction() {
     var senderAddress = userAddresses[chainNumber][0]
     try {
         // call the function from the smart contract
-        var startTransactionObject = smartContract.methods.startSession(userID)
+        var startTransactionObject = smartContract.methods.startSession(companyID, userID)
                                                 .send({from: senderAddress})
                                                 .then(function(receipt){ // called on event
                                                     // console.log(receipt)
                                                     var _sessionID = receipt.events.StartOfSession.returnValues.sessionID
-                                                    console.log("Session "+ _sessionID + " Activated to chain index: " + chainNumber + " from user: " + userID)
+                                                    console.log("Session "+ _sessionID + " Activated to chain index: " + chainNumber + " from ID: " + companyID)
+                                                    sessionToCompanyID[_sessionID] = companyID
                                                     sessionToUserID[_sessionID] = userID
                                                     sessionToTransactionHash[_sessionID] = receipt.transactionHash
                                                     sessionToChain[_sessionID] = chainNumber // save the number of the chain saved last
@@ -178,16 +182,20 @@ async function handOffTransaction() {
 
     // create a newUserID that is different from the previousUserID
     while (!same) {
-        newuserID = createUserID()
+        newuserID = createRandomID()
         same = (newuserID === sessionToUserID[_sessionID]) ? false : true
     }
+
+    // creates a random 6-digits number of companyID
+    var newCompanyID = createRandomID()
 
     // get the last transaction hash of this session
     var previousTransactionHash = sessionToTransactionHash[_sessionID]
     var previousUserID = sessionToUserID[_sessionID]
+    var previousCompanyID = sessionToCompanyID[_sessionID]
 
-    // the chain number from the previous userID
-    var previousChainNumber = userToChainNumber(previousUserID)
+    // the chain number from the previous companyID
+    var previousChainNumber = IDToChainNumber(previousCompanyID)
 
     // get the address and the smart contract object of the proper chain from the previous user
     var previousSmartContract = smartContractObjects[previousChainNumber]
@@ -196,21 +204,22 @@ async function handOffTransaction() {
         // call the function from the smart contract for the previous user
         var handOffTransactionObject = await previousSmartContract.methods.handoff(
                                                 _sessionID,
+                                                previousCompanyID,
                                                 previousUserID, // previous userID
+                                                newCompanyID,
                                                 newuserID, // new userID
                                                 previousTransactionHash,
                                                 previousChainNumber // save the index of the previous chain
                                                 ).send({from: previousSenderAddress})
                                                 .on('receipt', function(receipt) {
                                                     console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User (" + previousUserID + ") to chain index" + previousChainNumber + ")")
-                                                    sessionToUserID[_sessionID] = newuserID // save new userID
                                                     previousTransactionHash = receipt.transactionHash
                                                     sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
                                                     // stop the logging of sensors for this session
                                                     eval('clearInterval(window.session' + _sessionID + ')')
                                                 })
 
-        var newChainNumber = await getChainIndex(newuserID)
+        var newChainNumber = await getChainIndex(newCompanyID)
 
         // get the address and the smart contract object of the proper chain from the new user
         var newSmartContract = smartContractObjects[newChainNumber]
@@ -219,13 +228,16 @@ async function handOffTransaction() {
         // call the function from the smart contract for the new user
         var handOffTransactionObject = await newSmartContract.methods.handoff(
                                                             _sessionID,
+                                                            previousCompanyID,
                                                             previousUserID, // previous userID
+                                                            newCompanyID,
                                                             newuserID, // new userID
                                                             previousTransactionHash,
                                                             previousChainNumber // save the index of the previous chain
                                                             ).send({from: newSenderAddress})
                                                             .on('receipt', function(receipt) {
-                                                                console.log("Session "+ _sessionID + " Handed off. (TX saved to the new User (" + newuserID + ") to chain index" + newChainNumber + ")")
+                                                                console.log("Session "+ _sessionID + " Handed off. (TX saved to the new ID (" + newCompanyID + ") to chain index " + newChainNumber + ")")
+                                                                sessionToCompanyID[_sessionID] = newCompanyID // save new companyID
                                                                 sessionToUserID[_sessionID] = newuserID // save new userID
                                                                 sessionToChain[_sessionID] = newChainNumber // save the number of the chain saved last
                                                                 sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
@@ -255,9 +267,10 @@ async function endTransaction() {
         return
     }
     var userID = sessionToUserID[_sessionID]
+    var companyID = sessionToCompanyID[_sessionID]
 
-    // the chain number from the userID
-    var chainNumber = userToChainNumber(userID)
+    // the chain number from the companyID
+    var chainNumber = IDToChainNumber(companyID)
 
     // get the address and the smart contract object of the proper chain
     var smartContract = smartContractObjects[chainNumber]
@@ -271,10 +284,10 @@ async function endTransaction() {
         // console.log("interval session" + _sessionID + " cleared.")
 
         // call the function from the smart contract
-        var endTransactionObject = smartContract.methods.endSession(_sessionID, userID, previousTransactionHash)
+        var endTransactionObject = smartContract.methods.endSession(_sessionID, companyID, userID, previousTransactionHash)
                                             .send({from: senderAddress})
                                             .on('receipt', function(receipt) {
-                                                console.log("Session "+ _sessionID + " Ended to chain index: " + chainNumber + " from user: " + userID)
+                                                console.log("Session "+ _sessionID + " Ended to chain index: " + chainNumber + " from ID: " + companyID)
                                                 sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
                                             })
     } catch (e) {
@@ -289,6 +302,7 @@ async function endTransaction() {
 async function sensorTransaction(_sessionID) {
     var information = String(Math.random(98) + 1) + " C"
     var chainNumber = sessionToChain[_sessionID]
+    var companyID = sessionToCompanyID[_sessionID]
 
     // get the address and the smart contract object of the proper chain
     var smartContract = smartContractObjects[chainNumber]
@@ -298,6 +312,7 @@ async function sensorTransaction(_sessionID) {
         // call the function from the smart contract
         var sensorTransactionObject = smartContract.methods.sensorLogging(
                                                     _sessionID,
+                                                    companyID,
                                                     information)
                                                     .send({from: senderAddress})
     } catch (e) {
@@ -307,13 +322,12 @@ async function sensorTransaction(_sessionID) {
 }
 
 
-function createUserID() {
+function createRandomID() {
     return Math.floor(100000 + Math.random() * 900000)
 }
 
 
 async function initializeSensors(_sessionID) {
-    // console.log("Initialize sensors for session" + _sessionID + ".")
     // repeat the interval session1, session2, etc very 5000milsec = 5sec.
     // window.variableName saves a global variable with dynamic naming for clearing the interval from another function
     eval('window.session' + _sessionID + ' = ' + setInterval(function() { sensorTransaction(_sessionID) }, 5000))
@@ -350,14 +364,14 @@ function getFirstDigit(id) {
 
 
 // get the first digit of the userID and match it to a number from 0 to numberOfServers
-function userToChainNumber(userID) {
-    var chainFromUser
-    if (changedUsers[userID] === undefined) {
-        chainFromUser = digitToServer(getFirstDigit(userID))
+function IDToChainNumber(companyID) {
+    var chainFromCompID
+    if (changedCompanies[companyID] === undefined) {
+        chainFromCompID = digitToServer(getFirstDigit(companyID))
     } else {
-        chainFromUser = changedUsers[userID]
+        chainFromCompID = changedCompanies[companyID]
     }
-    return chainFromUser
+    return chainFromCompID
 }
 
 
@@ -377,9 +391,9 @@ function coverAllContracts(chainNumber) {
 
 
 // get the chain number of this user by checking the load on the chain assigned to it
-async function getChainIndex(userID) {
+async function getChainIndex(companyID) {
     var validLoadNotFound = false
-    var currentChain = userToChainNumber(userID)
+    var currentChain = IDToChainNumber(companyID)
     var _web3 = web3Instances[currentChain]
     
     // check the load on the chain assigned to the user
@@ -402,8 +416,8 @@ async function getChainIndex(userID) {
         } else if (chain != currentChain) {
             var currentResult = await decentLoadOnChain(web3Instances[chain]).then( function (result) {
                                                                                         if (result) {
-                                                                                            console.log("User " + userID + " moved to chain " + chain)
-                                                                                            changedUsers[userID] = chain
+                                                                                            console.log("Company with ID " + companyID + " moved to chain " + chain)
+                                                                                            changedCompanies[companyID] = chain
                                                                                         }
                                                                                         return result
                                                                                     }) 

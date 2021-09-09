@@ -11,6 +11,12 @@ export default [
 			{
 				"indexed": false,
 				"internalType": "uint32",
+				"name": "companyID",
+				"type": "uint32"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint32",
 				"name": "userID",
 				"type": "uint32"
 			},
@@ -42,7 +48,19 @@ export default [
 			{
 				"indexed": false,
 				"internalType": "uint32",
+				"name": "previousCompanyID",
+				"type": "uint32"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint32",
 				"name": "previousUserID",
+				"type": "uint32"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint32",
+				"name": "newCompanyID",
 				"type": "uint32"
 			},
 			{
@@ -84,15 +102,21 @@ export default [
 			},
 			{
 				"indexed": false,
-				"internalType": "uint256",
-				"name": "time",
-				"type": "uint256"
+				"internalType": "uint32",
+				"name": "companyID",
+				"type": "uint32"
 			},
 			{
 				"indexed": false,
 				"internalType": "string",
 				"name": "info",
 				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "time",
+				"type": "uint256"
 			}
 		],
 		"name": "SensorLog",
@@ -106,6 +130,12 @@ export default [
 				"internalType": "uint256",
 				"name": "sessionID",
 				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint32",
+				"name": "companyID",
+				"type": "uint32"
 			},
 			{
 				"indexed": false,
@@ -151,6 +181,11 @@ export default [
 			},
 			{
 				"internalType": "uint32",
+				"name": "_companyID",
+				"type": "uint32"
+			},
+			{
+				"internalType": "uint32",
 				"name": "_userID",
 				"type": "uint32"
 			},
@@ -187,7 +222,17 @@ export default [
 			},
 			{
 				"internalType": "uint32",
+				"name": "_previousCompanyID",
+				"type": "uint32"
+			},
+			{
+				"internalType": "uint32",
 				"name": "_previousUserID",
+				"type": "uint32"
+			},
+			{
+				"internalType": "uint32",
+				"name": "_newCompanyID",
 				"type": "uint32"
 			},
 			{
@@ -219,6 +264,11 @@ export default [
 				"type": "uint256"
 			},
 			{
+				"internalType": "uint32",
+				"name": "_companyID",
+				"type": "uint32"
+			},
+			{
 				"internalType": "string",
 				"name": "information",
 				"type": "string"
@@ -244,6 +294,11 @@ export default [
 	},
 	{
 		"inputs": [
+			{
+				"internalType": "uint32",
+				"name": "_companyID",
+				"type": "uint32"
+			},
 			{
 				"internalType": "uint32",
 				"name": "_userID",

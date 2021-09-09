@@ -8,13 +8,13 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
     var transactionsChecked = [currentTransactionHash]
     while (!tracebackDone) {
         var values
-        // console.log(currentChain)
         var web3_instance = web3Instances[currentChain]
         var receipt = await web3_instance.eth.getTransactionReceipt(currentTransactionHash);
 
         while(receipt == null){
             receipt = await web3_instance.eth.getTransactionReceipt(currentTransactionHash);
         }
+
         var topics = receipt.logs[0].topics
         var data = receipt.logs[0].data
         
@@ -34,15 +34,15 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
 
         }else if (isItHandoff(topics[0])) {
             values = handleHandoffEvent(data)
-            currentTransactionHash = "0x" + values[2]
+            currentTransactionHash = "0x" + values[4]
             values.unshift("Session " + sessionID)
             values.unshift("Chain " + currentChain)
             values.unshift("Handoff")
-            currentChain = values[6]
+            currentChain = values[8]
             
         }else if (isItEndSession(topics[0])){
             values = handleEndEvent(data)
-            currentTransactionHash = "0x" + values[1]
+            currentTransactionHash = "0x" + values[2]
             values.unshift("Session " + sessionID)
             values.unshift("Chain " + currentChain)
             values.unshift("EndOfSession")
@@ -69,59 +69,63 @@ function rightSession(topic, sessionID) {
 
 function handleStartEvent(data) {
     // 2 values in data 
-    // userID || time
-    var userID = parseInt(data.slice(0, data.length - 64), 16)
+    // companyID || userID || time
+    var companyID = parseInt(data.slice(data.length - 192, data.length - 128), 16)
+    var userID = data.slice(data.length - 128, data.length - 64)
     var timestamp = parseInt(data.slice(data.length - 64), 16)
-    return [userID, timestamp]
+    return [companyID, userID, timestamp]
 }
 
 
 function handleHandoffEvent(data) {
     // 5 values in data 
-    // previousUserID || newUserID || previousStateTransactionHash || previousChainIndex || time
-    var previousUserID = parseInt(data.slice(data.length - 320, data.length - 256), 16)
+    // previousCompanyID || previousUserID || newCompanyID || newUserID || previousStateTransactionHash || previousChainIndex || time
+    var previousCompanyID = parseInt(data.slice(data.length - 448, data.length - 384), 16)
+    var previousUserID = parseInt(data.slice(data.length - 384, data.length - 320), 16)
+    var newCompanyID = parseInt(data.slice(data.length - 320, data.length - 256), 16)
     var newUserID = parseInt(data.slice(data.length - 256, data.length - 192), 16)
     var previousStateTransactionHash = data.slice(data.length - 192, data.length - 128)
     var previousChainIndex = parseInt(data.slice(data.length - 128, data.length - 64), 16)
     var timestamp = parseInt(data.slice(data.length - 64), 16)
-    return [previousUserID, newUserID, previousStateTransactionHash, previousChainIndex, timestamp]
+    return [previousCompanyID, previousUserID, newCompanyID, newUserID, previousStateTransactionHash, previousChainIndex, timestamp]
 }
 
 
 function handleEndEvent(data) {
     // 3 values in data
-    // userID || previousTransactionHash || time
+    // companyID || userID || previousTransactionHash || time
+    var companyID = parseInt(data.slice(data.length - 256, data.length - 192), 16)
     var userID = parseInt(data.slice(data.length - 192, data.length - 128), 16)
     var previousTransactionHash = data.slice(data.length - 128, data.length - 64)
     var timestamp = parseInt(data.slice(data.length - 64), 16)
-    return [userID, previousTransactionHash, timestamp]
+    return [companyID, userID, previousTransactionHash, timestamp]
 }
 
 
 function isItStartSession(eventSignature) {
-    // keccak256('StartOfSession(uint256,uint32,uint256)').toString('hex')
-    var hash = "0x1bf43c4e75a7bff085adfa4cd1169f72e357c0b294df3682aa5e0a846fb49530"
+    // keccak256('StartOfSession(uint256,uint32,uint32,uint256)').toString('hex')
+    var hash = "0xe49c753973c097158927b5bacda348e5d3e7b9662f88bc97727320f8774fc9d4"
     return (eventSignature === hash)
 }
 
 
 function isItHandoff(eventSignature) {
-    // keccak256('Handoff(uint256,uint32,uint32,bytes32,uint32,uint256)').toString('hex')
-    var hash =  "0x86d35a3e42d5a887505753c1790979e2cae4b70139b38a8e87e398deed56298f"
+    // keccak256('Handoff(uint256,uint32,uint32,uint32,uint32,bytes32,uint32,uint256)').toString('hex')
+    var hash =  "0x9d87175ef8e1fec360aa582266352274b86963b1c6c91d27eed1db8bcfef3bec"
     return (eventSignature === hash)
 }
 
 
 function isItEndSession(eventSignature) {
-    // keccak256('EndOfSession(uint256,uint32,bytes32,uint256)').toString('hex')
-    var hash = "0xd10cf7e55fd1ee438dcbd3db7f77f6cf1e212df7868df78c9b21682b046b67b6"
+    // keccak256('EndOfSession(uint256,uint32,uint32,bytes32,uint256)').toString('hex')
+    var hash = "0xe6655d3159cc6b5ce597695101ccc8db461698722e61567bd06e3add094898f2"
     return (eventSignature === hash)
 }
 
 
 function isItSensorLog(eventSignature) {
-    // keccak256('SensorLog(uint256,uint256,string)').toString('hex')
-    var hash = "0x4303a873fbd8b09c053de5da9bd4246acb454c5c47b33a1446844caf71f86059"
+    // keccak256('SensorLog(uint256,uint32,string,uint256)').toString('hex')
+    var hash = "0x26bcc523a5e3b94458b5967eece5212cfdc664966710cb8648480b5b0d343956"
     return (eventSignature === hash)
 }
 
@@ -149,5 +153,6 @@ export async function searchForEndSession(sessionID, contracts) {
                     })
         found = events[1]
     }
+    // console.log([i, events[0]])
     return [i, events[0]]
 }
