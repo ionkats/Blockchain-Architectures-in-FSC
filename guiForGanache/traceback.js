@@ -68,7 +68,7 @@ function rightSession(topic, sessionID) {
 
 
 function handleStartEvent(data) {
-    // 2 values in data 
+    // 3 values in data 
     // companyID || userID || time
     var companyID = parseInt(data.slice(data.length - 192, data.length - 128), 16)
     var userID = data.slice(data.length - 128, data.length - 64)
@@ -78,7 +78,7 @@ function handleStartEvent(data) {
 
 
 function handleHandoffEvent(data) {
-    // 5 values in data 
+    // 7 values in data 
     // previousCompanyID || previousUserID || newCompanyID || newUserID || previousStateTransactionHash || previousChainIndex || time
     var previousCompanyID = parseInt(data.slice(data.length - 448, data.length - 384), 16)
     var previousUserID = parseInt(data.slice(data.length - 384, data.length - 320), 16)
@@ -92,7 +92,7 @@ function handleHandoffEvent(data) {
 
 
 function handleEndEvent(data) {
-    // 3 values in data
+    // 4 values in data
     // companyID || userID || previousTransactionHash || time
     var companyID = parseInt(data.slice(data.length - 256, data.length - 192), 16)
     var userID = parseInt(data.slice(data.length - 192, data.length - 128), 16)
@@ -130,29 +130,60 @@ function isItSensorLog(eventSignature) {
 }
 
 
-export async function searchForEndSession(sessionID, contracts) {
-    var found = false
+export async function searchForEndSession(_sessionID, contracts) {
+    var exitLoop = false
     var i = 0
-    while (!found) {
+    while (!exitLoop) {
         var events = await contracts[i].getPastEvents('EndOfSession', {
-                                        fromBlock: 'earliest',
-                                        toBlock: 'latest'})
-                    .then(function(events) {
-                        for (var j = 0; j < events.length; j++) {
-                            if (parseInt(events[j].raw.topics[1]) === Number(sessionID)) {
-                                return [events[j].transactionHash, true]
-                            }
-                        }
-                        if (i < (contracts.length - 1)) {
-                            console.log("not found on chain " + i)
-                            i += 1
-                        } else {
-                            // console.log("Filtering did not work, maybe the session hasn't ended.")
-                            return ["", true] //for exiting the loop
-                        }
-                    })
-        found = events[1]
+                                                        filter: {sessionID: _sessionID},
+                                                        fromBlock: 'earliest',
+                                                        toBlock: 'latest'})
+                                        .then(function(events) {
+                                            if (events.length === 1) {
+                                                return [events[0].transactionHash, true]
+                                            } else if (events.length > 1) {
+                                                console.log("Found more that one events.")
+                                                console.log(events)
+                                                return ["", true]
+                                            }
+                                            if (i < (contracts.length - 1)) {
+                                                console.log("not found on chain " + i)
+                                                i += 1
+                                            } else {
+                                                // console.log("Filtering did not work, maybe the session hasn't ended.")
+                                                return ["", true] //for exiting the loop
+                                            }
+                                        })
+        exitLoop = events[1]
     }
-    // console.log([i, events[0]])
     return [i, events[0]]
+}
+
+
+export async function getSensorData(_sessionID, contracts, _companyID) {
+    var exitLoop = false
+    var i = 0
+    while (!exitLoop) {
+        var data = await contracts[i].getPastEvents('SensorLog', {
+                                                        filter: {sessionID: _sessionID, companyID: _companyID},
+                                                        fromBlock: 'earliest',
+                                                        toBlock: 'latest'})
+                                        .then(function(events) {
+                                            for (var j = 0; j < events.length; j++) {
+                                                var thisEvent = events[j].returnValues
+                                                console.log(["Sensor Log", thisEvent.sessionID, thisEvent.companyID, thisEvent.info, thisEvent.time])
+                                                exitLoop = true
+                                            }
+                                            if (exitLoop) {return true}
+                                            if (events.length === 0 || i < (contracts.length - 1)) {
+                                                console.log("not found on chain " + i)
+                                                i += 1
+                                            } else {
+                                                console.log("Sensor data not found")
+                                                return true
+                                            }
+                                        })
+        exitLoop = data
+    }
+    return
 }

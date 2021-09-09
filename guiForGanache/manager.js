@@ -1,8 +1,9 @@
-import {initialize} from "./initializer.js"
-import {initializeWithoutData} from "./initializerWithoutData.js"
-import {random} from "./initializerWithoutData.js"
-import {tracebackThroughBlockChain} from "./traceback.js"
-import {searchForEndSession} from "./traceback.js"
+import { initialize } from "./initializer.js"
+import { initializeWithoutData } from "./initializerWithoutData.js"
+import { random } from "./initializerWithoutData.js"
+import { tracebackThroughBlockChain } from "./traceback.js"
+import { searchForEndSession } from "./traceback.js"
+import { getSensorData } from "./traceback.js"
 
 // uncomment to initialize the servers and get the addresses of already deployed contracts 
 
@@ -36,8 +37,9 @@ console.log("There are " + numberOfServers + " chains currently running.")
 // connect the UI buttons
 const startSessionButton = document.getElementById("newSession-button")
 const endSessionButton = document.getElementById("endSession-button")
-const HandoffButton = document.getElementById("Handoff-button")
+const handoffButton = document.getElementById("Handoff-button")
 const tracebackButton = document.getElementById("Traceback-button")
+const sensorButton = document.getElementById("SensorData-button")
 
 // const GASLIMIT = 15000000
 const GASLIMIT = 2000000
@@ -111,8 +113,9 @@ function addUiListeners() {
     // specified transactions
     startSessionButton.addEventListener("click", startTransaction)
     endSessionButton.addEventListener("click", endTransaction)
-    HandoffButton.addEventListener("click", handOffTransaction)
+    handoffButton.addEventListener("click", handOffTransaction)
     tracebackButton.addEventListener("click", traceback)
+    sensorButton.addEventListener("click", sensorData)
 }
 addUiListeners()
 
@@ -340,8 +343,10 @@ async function traceback() {
     var result = await searchForEndSession(sessionID, smartContractObjects)
     if (result[1] === "") {
         console.log("The session hasn't ended yet")
+        document.getElementById("Traceback-sessionId").value = ""
         return
     }
+
     tracebackThroughBlockChain(result[1], result[0], sessionID, web3Instances)
 
     // reset value to the placeholder
@@ -397,7 +402,7 @@ async function getChainIndex(companyID) {
     var _web3 = web3Instances[currentChain]
     
     // check the load on the chain assigned to the user
-    var firstResult = await decentLoadOnChain(_web3).then( function (result) {
+    var firstResult = await decentLoadOnChain(_web3).then(function (result) {
                                         if (result) {
                                             // console.log("got in")
                                         }
@@ -414,7 +419,7 @@ async function getChainIndex(companyID) {
             validLoadNotFound = true
             break
         } else if (chain != currentChain) {
-            var currentResult = await decentLoadOnChain(web3Instances[chain]).then( function (result) {
+            var currentResult = await decentLoadOnChain(web3Instances[chain]).then(function (result) {
                                                                                         if (result) {
                                                                                             console.log("Company with ID " + companyID + " moved to chain " + chain)
                                                                                             changedCompanies[companyID] = chain
@@ -443,11 +448,24 @@ async function decentLoadOnChain(web3_instance) {
     var result = true
     var blockNumber = await web3_instance.eth.getBlock("latest")
     for (var i=0; i < 4; i++) {
-        var blockData = await web3_instance.eth.getBlock(blockNumber.number - i).then(function (block) {
-                                                                                            if (block.gasUsed > 0.85*GASLIMIT) {
-                                                                                                result = false
-                                                                                            }
-                                                                                        })
+        var blockData = await web3_instance.eth.getBlock(blockNumber.number - i)
+                                                .then(function (block) {
+                                                    if (block.gasUsed > 0.85*GASLIMIT) {
+                                                        result = false
+                                                    }
+                                                })
     }
     return result
+}
+
+
+function sensorData() {
+    var sessionID = document.getElementById("SensorData-sessionId").value
+    var companyID = document.getElementById("SensorData-companyId").value
+
+    getSensorData(sessionID, smartContractObjects, companyID)
+
+    // reset values to the placeholder
+    document.getElementById("SensorData-sessionId").value = ""
+    document.getElementById("SensorData-companyId").value = ""
 }
