@@ -1,6 +1,4 @@
 export async function tracebackThroughBlockChain(transaction, chainIndex, sessionID, web3Instances) {
-
-    //must find a way to get the traceback without external saving of data (last trasactionHash/ chain index of the end session transaction)
     
     var currentChain = Number(chainIndex)
     var currentTransactionHash = transaction
@@ -48,7 +46,7 @@ export async function tracebackThroughBlockChain(transaction, chainIndex, sessio
             values.unshift("EndOfSession")
 
         }else if (isItSensorLog(topics[0])) {
-            console.log("found a sensor log at chain: " + currentChain + 
+            console.log("Found a sensor log at chain: " + currentChain + 
                         "info" + receipt)
             return false
         }
@@ -73,7 +71,8 @@ function handleStartEvent(data) {
     var companyID = parseInt(data.slice(data.length - 192, data.length - 128), 16)
     var userID = data.slice(data.length - 128, data.length - 64)
     var timestamp = parseInt(data.slice(data.length - 64), 16)
-    return [companyID, userID, timestamp]
+    var date = new Date(timestamp*1000)
+    return [companyID, userID, date]
 }
 
 
@@ -87,7 +86,8 @@ function handleHandoffEvent(data) {
     var previousStateTransactionHash = data.slice(data.length - 192, data.length - 128)
     var previousChainIndex = parseInt(data.slice(data.length - 128, data.length - 64), 16)
     var timestamp = parseInt(data.slice(data.length - 64), 16)
-    return [previousCompanyID, previousUserID, newCompanyID, newUserID, previousStateTransactionHash, previousChainIndex, timestamp]
+    var date = new Date(timestamp*1000)
+    return [previousCompanyID, previousUserID, newCompanyID, newUserID, previousStateTransactionHash, previousChainIndex, date]
 }
 
 
@@ -98,7 +98,8 @@ function handleEndEvent(data) {
     var userID = parseInt(data.slice(data.length - 192, data.length - 128), 16)
     var previousTransactionHash = data.slice(data.length - 128, data.length - 64)
     var timestamp = parseInt(data.slice(data.length - 64), 16)
-    return [companyID, userID, previousTransactionHash, timestamp]
+    var date = new Date(timestamp*1000)
+    return [companyID, userID, previousTransactionHash, date]
 }
 
 
@@ -147,7 +148,7 @@ export async function searchForEndSession(_sessionID, contracts) {
                                                 return ["", true]
                                             }
                                             if (i < (contracts.length - 1)) {
-                                                console.log("not found on chain " + i)
+                                                console.log("End of session not found on chain " + i + ".")
                                                 i += 1
                                             } else {
                                                 // console.log("Filtering did not work, maybe the session hasn't ended.")
@@ -158,8 +159,8 @@ export async function searchForEndSession(_sessionID, contracts) {
     }
     return [i, events[0]]
 }
-
-
+1631279294
+1607110465663
 export async function getSensorData(_sessionID, contracts, _companyID) {
     var exitLoop = false
     var i = 0
@@ -171,15 +172,16 @@ export async function getSensorData(_sessionID, contracts, _companyID) {
                                         .then(function(events) {
                                             for (var j = 0; j < events.length; j++) {
                                                 var thisEvent = events[j].returnValues
-                                                console.log(["Sensor Log", thisEvent.sessionID, thisEvent.companyID, thisEvent.info, thisEvent.time])
+                                                var date = new Date(Number(thisEvent.time)*1000)
+                                                console.log(["Sensor Log", thisEvent.sessionID, thisEvent.companyID, thisEvent.info, date])
                                                 exitLoop = true
                                             }
                                             if (exitLoop) {return true}
                                             if (events.length === 0 || i < (contracts.length - 1)) {
-                                                console.log("not found on chain " + i)
+                                                console.log("Sensor logs not found on chain " + i +".")
                                                 i += 1
                                             } else {
-                                                console.log("Sensor data not found")
+                                                console.log("Sensor data not found.")
                                                 return true
                                             }
                                         })
