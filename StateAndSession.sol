@@ -36,7 +36,6 @@ contract StateAndSession {
     );
 
     mapping(uint256 => bool) public activeSessions;
-    // mapping(uint256 => uint32) public userToChain;
     uint256 public sessionID;
 
     function startSession(

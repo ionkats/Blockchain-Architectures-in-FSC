@@ -159,8 +159,8 @@ export async function searchForEndSession(_sessionID, contracts) {
     }
     return [i, events[0]]
 }
-1631279294
-1607110465663
+
+
 export async function getSensorData(_sessionID, contracts, _companyID) {
     var exitLoop = false
     var i = 0
