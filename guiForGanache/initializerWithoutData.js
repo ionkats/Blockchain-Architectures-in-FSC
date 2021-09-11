@@ -59,26 +59,39 @@ export function initializeWithoutData() {
 }
 
 
-function saveAccountsDeployContract(web3_instance, stateandsessionContract, i) {
+async function saveAccountsDeployContract(web3_instance, stateandsessionContract, i) {
     counter++
-    web3_instance.eth.getAccounts().then( fetchedAccounts => {
+    var items = await web3_instance.eth.getAccounts().then( fetchedAccounts => {
                                         // console.log(fetchedAccounts)
                                         var max = fetchedAccounts.length
-                                        stateandsessionContract.deploy({data: contractData, arguments: []})
+                                        var items = stateandsessionContract.deploy({data: contractData, arguments: []})
                                                         .send({from: fetchedAccounts[random(0, max)], gas: '2000000'})
                                                         .then( (contractCreated) => {
                                                             console.log('Contract mined for chain index ' + (contractAddresses.length) +'. Address: ' + contractCreated.options.address)
                                                             console.log('Address of server ends in ' + i)
                                                             contractAddresses.push(contractCreated.options.address)
-                                                            contractObjects.push(new web3_instance.eth.Contract(contractABI, contractCreated.options.address))
+                                                            var contractObj = new web3_instance.eth.Contract(contractABI, contractCreated.options.address)
+                                                            contractObjects.push(contractObj)
                                                             web3Instances.push(web3_instance)
                                                             addresses.push(fetchedAccounts)
+                                                            return [contractCreated.options.address, contractObj, web3_instance, fetchedAccounts]
                                                     })
+                                        return items
                                             })
+    return items
 }
 
 
 // get random integer in [min, max)
 export function random(min, max) {
     return (Math.floor(Math.random()*(max - min)) + min)
+}
+
+
+export function createNewServer(portNumber) {
+    var web3_new = new Web3('ws://localhost:' + portNumber)
+    var stateandsessionContract_new = new web3_new.eth.Contract(contractABI)
+    var items = saveAccountsDeployContract(web3_new, stateandsessionContract_new, counter + 1)
+    
+    return items
 }

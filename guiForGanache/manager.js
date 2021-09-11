@@ -1,5 +1,6 @@
 import { initialize } from "./initializer.js"
 import { initializeWithoutData } from "./initializerWithoutData.js"
+import { createNewServer } from "./initializerWithoutData.js"
 import { random } from "./initializerWithoutData.js"
 import { tracebackThroughBlockChain } from "./traceback.js"
 import { searchForEndSession } from "./traceback.js"
@@ -27,7 +28,7 @@ setTimeout(function () {
 
 // put the address of the deployed smart contracts here
 var userAddresses = data[0]
-var smartContractObjects =data[1] 
+var smartContractObjects = data[1]
 var smartContractAddresses = data[2]
 var web3Instances = data[3]
 var numberOfServers = data[4]
@@ -49,13 +50,14 @@ var sessionToUserID = {} // key: sessionID, value: current UserID for sanity che
 var sessionToTransactionHash = {} // dictionary key:sessionID, value: previous transaction hash that it passed
 var sessionToChain = {}
 var firstHandoff = {}
-// the userID that change chains are saved here
-var changedCompanies = {}
+var chainToCompanies = {} // the userID that change chains are saved here
+var portsUsed = []
 
 
 // initialize the active sessions per chain
 for( var i=0; i < numberOfServers; i++) {
     activeSessionsPerChain[i] = 0
+    portsUsed.push('854' + i)
 }
 
 
@@ -135,7 +137,7 @@ async function startTransaction() {
 
     // the the chain number from the userID
     var chainNumber = await getChainIndex(companyID)
-    if (chainNumber === undefined) {
+    if (chainNumber === undefined || !deployed) {
         console.log("Not proceeding in activating any sessions")
         return
     }
@@ -371,10 +373,11 @@ function getFirstDigit(id) {
 // get the first digit of the userID and match it to a number from 0 to numberOfServers
 function IDToChainNumber(companyID) {
     var chainFromCompID
-    if (changedCompanies[companyID] === undefined) {
+    if (chainToCompanies[companyID] === undefined) {
         chainFromCompID = digitToServer(getFirstDigit(companyID))
-    } else {
-        chainFromCompID = changedCompanies[companyID]
+    } 
+    if (deployed) {
+        chainToCompanies[companyID] = chainFromCompID 
     }
     return chainFromCompID
 }
@@ -422,7 +425,7 @@ async function getChainIndex(companyID) {
             var currentResult = await decentLoadOnChain(web3Instances[chain]).then(function (result) {
                                                                                         if (result) {
                                                                                             console.log("Company with ID " + companyID + " moved to chain " + chain)
-                                                                                            changedCompanies[companyID] = chain
+                                                                                            chainToCompanies[companyID] = chain
                                                                                         }
                                                                                         return result
                                                                                     }) 
@@ -434,7 +437,27 @@ async function getChainIndex(companyID) {
     }
 
     if (validLoadNotFound) {
-        alert("You have to create a new server, everything is almost fully loaded")
+        // var validPort = false
+        // deployed = false
+        // while (!validPort) {
+        //     var port = window.prompt("You have to create a new server, everything is almost fully loaded. Insert a not used port of a new server.")
+        //     validPort = !portsUsed.includes(port)
+        //     if (port === undefined) {
+        //         validPort = false
+        //     }
+        // }
+        // var items = await createNewServer(port)
+        
+        // setTimeout(function () {
+        //     deployed = true
+        // }, 16000) // wait for 16 seconds for the contracts to be surely deployed (block every 15s)
+        
+        // smartContractAddresses.push(items[0])
+        // smartContractObjects.push(items[1])
+        // web3Instances.push(items[2])
+        // userAddresses.push(items[3])
+        // numberOfServers++
+        alert("Need to create new server.")
         return
     } else {
         alert("An error at the getChainIndex function, needs debugging.")
@@ -447,7 +470,7 @@ async function getChainIndex(companyID) {
 async function decentLoadOnChain(web3_instance) {
     var result = true
     var blockNumber = await web3_instance.eth.getBlock("latest")
-    for (var i=0; i < 4; i++) {
+    for (var i=0; i < 3; i++) {
         var blockData = await web3_instance.eth.getBlock(blockNumber.number - i)
                                                 .then(function (block) {
                                                     if (block.gasUsed > 0.85*GASLIMIT) {
