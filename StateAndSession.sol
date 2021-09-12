@@ -38,6 +38,13 @@ contract StateAndSession {
     mapping(uint256 => bool) public activeSessions;
     uint256 public sessionID;
 
+    constructor(uint256 startingSession, uint256[] memory listOfActiveSessions) {
+        for (uint i=0; i<listOfActiveSessions.length; i++) {
+            activeSessions[listOfActiveSessions[i]] = true;
+        }
+        sessionID = startingSession;
+    }
+
     function startSession(
         uint32 _companyID,
         uint32 _userID

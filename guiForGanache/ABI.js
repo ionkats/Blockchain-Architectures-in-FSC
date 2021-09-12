@@ -1,5 +1,21 @@
 export default [
 	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "startingSession",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "listOfActiveSessions",
+				"type": "uint256[]"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{

@@ -45,6 +45,8 @@ const sensorButton = document.getElementById("SensorData-button")
 // const GASLIMIT = 15000000
 const GASLIMIT = 2000000
 var activeSessionsPerChain = {}
+var activeSessions = []
+var currentSession = 0
 var sessionToCompanyID = {}// key: sessionID, value: current CompanyID
 var sessionToUserID = {} // key: sessionID, value: current UserID for sanity checks of handoffs
 var sessionToTransactionHash = {} // dictionary key:sessionID, value: previous transaction hash that it passed
@@ -87,6 +89,8 @@ function specifiedEventHandler(handler) {
 async function startSessionEvent(values) {
     var chainNumber = IDToChainNumber(Number(values.userID))
     activeSessionsPerChain[chainNumber] += 1
+    currentSession++;
+    activeSessions.push(currentSession)
 }
 
 
@@ -108,6 +112,10 @@ async function handoffEvent(values) {
 async function endSessionEvent(values) { 
     var chainNumber = IDToChainNumber(Number(values.userID))
     activeSessionsPerChain[chainNumber] -= 1
+    const index = activeSessions.indexOf(values.sessionID);
+    if (index > -1) {
+        activeSessions.splice(index, 1);
+    }
 }
 
 
@@ -437,27 +445,27 @@ async function getChainIndex(companyID) {
     }
 
     if (validLoadNotFound) {
-        // var validPort = false
-        // deployed = false
-        // while (!validPort) {
-        //     var port = window.prompt("You have to create a new server, everything is almost fully loaded. Insert a not used port of a new server.")
-        //     validPort = !portsUsed.includes(port)
-        //     if (port === undefined) {
-        //         validPort = false
-        //     }
-        // }
-        // var items = await createNewServer(port)
+        var validPort = false
+        deployed = false
+        while (!validPort) {
+            var port = window.prompt("You have to create a new server, everything is almost fully loaded. Insert a not used port of a new server.")
+            validPort = !portsUsed.includes(port)
+            if (port === undefined) {
+                validPort = false
+            }
+        }
+        var items = await createNewServer(port, currentSession, activeSessions)
         
-        // setTimeout(function () {
-        //     deployed = true
-        // }, 16000) // wait for 16 seconds for the contracts to be surely deployed (block every 15s)
+        setTimeout(function () {
+            deployed = true
+        }, 16000) // wait for 16 seconds for the contracts to be surely deployed (block every 15s)
         
-        // smartContractAddresses.push(items[0])
-        // smartContractObjects.push(items[1])
-        // web3Instances.push(items[2])
-        // userAddresses.push(items[3])
-        // numberOfServers++
-        alert("Need to create new server.")
+        smartContractAddresses.push(items[0])
+        smartContractObjects.push(items[1])
+        web3Instances.push(items[2])
+        userAddresses.push(items[3])
+        numberOfServers++
+        // alert("Need to create new server.")
         return
     } else {
         alert("An error at the getChainIndex function, needs debugging.")
