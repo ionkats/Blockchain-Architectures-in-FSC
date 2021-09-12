@@ -65,7 +65,7 @@ async function saveAccountsDeployContract(web3_instance, stateandsessionContract
                                         // console.log(fetchedAccounts)
                                         var max = fetchedAccounts.length
                                         var items = stateandsessionContract.deploy({data: contractData, arguments: [startingSession, listOfSessions]})
-                                                        .send({from: fetchedAccounts[random(0, max)], gas: '2000000'})
+                                                        .send({from: fetchedAccounts[random(0, max)], gas: '15000000'})
                                                         .then( (contractCreated) => {
                                                             console.log('Contract mined for chain index ' + (contractAddresses.length) +'. Address: ' + contractCreated.options.address)
                                                             console.log('Address of server ends in ' + i)

@@ -42,8 +42,7 @@ const handoffButton = document.getElementById("Handoff-button")
 const tracebackButton = document.getElementById("Traceback-button")
 const sensorButton = document.getElementById("SensorData-button")
 
-// const GASLIMIT = 15000000
-const GASLIMIT = 2000000
+const GASLIMIT = 15000000
 var activeSessionsPerChain = {}
 var activeSessions = []
 var currentSession = 0
@@ -478,7 +477,7 @@ async function getChainIndex(companyID) {
 async function decentLoadOnChain(web3_instance) {
     var result = true
     var blockNumber = await web3_instance.eth.getBlock("latest")
-    for (var i=0; i < 3; i++) {
+    for (var i=0; i < 5; i++) {
         var blockData = await web3_instance.eth.getBlock(blockNumber.number - i)
                                                 .then(function (block) {
                                                     if (block.gasUsed > 0.85*GASLIMIT) {
