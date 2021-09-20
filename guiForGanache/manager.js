@@ -5,6 +5,7 @@ import { random } from "./initializerWithoutData.js"
 import { tracebackThroughBlockChain } from "./traceback.js"
 import { searchForEndSession } from "./traceback.js"
 import { getSensorData } from "./traceback.js"
+import { getIndexThroughChains } from "./traceback.js"
 
 // uncomment to initialize the servers and get the addresses of already deployed contracts 
 
@@ -207,7 +208,7 @@ async function handOffTransaction() {
     var previousCompanyID = sessionToCompanyID[_sessionID]
 
     // the chain number from the previous companyID
-    var previousChainNumber = IDToChainNumber(previousCompanyID)
+    var previousChainNumber = await getIndexThroughChains(_sessionID, smartContractObjects ,previousCompanyID)
 
     // get the address and the smart contract object of the proper chain from the previous user
     var previousSmartContract = smartContractObjects[previousChainNumber]
@@ -282,7 +283,7 @@ async function endTransaction() {
     var companyID = sessionToCompanyID[_sessionID]
 
     // the chain number from the companyID
-    var chainNumber = IDToChainNumber(companyID)
+    var chainNumber = await getIndexThroughChains(_sessionID, smartContractObjects, companyID)
 
     // get the address and the smart contract object of the proper chain
     var smartContract = smartContractObjects[chainNumber]
@@ -377,11 +378,21 @@ function getFirstDigit(id) {
 }
 
 
+// hash the ID with keccak256 and get modulo the number of servers
+function hashAndModulo(x) {
+    var number = Number(keccak256(x)%numberOfServers)
+    return number
+}
+
+
 // get the first digit of the userID and match it to a number from 0 to numberOfServers
 function IDToChainNumber(companyID) {
-    var chainFromCompID
-    if (chainToCompanies[companyID] === undefined) {
+    var chainFromCompID = chainToCompanies[companyID]
+    var hasAlready = true
+    if (chainFromCompID === undefined) {
         chainFromCompID = digitToServer(getFirstDigit(companyID))
+        // chainFromCompID = hashAndModulo(companyID)
+        hasAlready = true
     } 
     if (deployed) {
         chainToCompanies[companyID] = chainFromCompID 
@@ -405,7 +416,7 @@ function coverAllContracts(chainNumber) {
 }
 
 
-// get the chain number of this user by checking the load on the chain assigned to it
+// get the chain number of this company by checking the load on the chain assigned to it
 async function getChainIndex(companyID) {
     var validLoadNotFound = false
     var currentChain = IDToChainNumber(companyID)
@@ -467,13 +478,13 @@ async function getChainIndex(companyID) {
         // alert("Need to create new server.")
         return
     } else {
-        alert("An error at the getChainIndex function, needs debugging.")
+        alert("An error at the getChainIndex function, needs debugging. Sorry for the inconvenience")
         return
     }
 }
 
 
-// check if over 85% of gas is used on the last 2 blocks
+// check if over 85% of gas is used on the last 5 blocks
 async function decentLoadOnChain(web3_instance) {
     var result = true
     var blockNumber = await web3_instance.eth.getBlock("latest")

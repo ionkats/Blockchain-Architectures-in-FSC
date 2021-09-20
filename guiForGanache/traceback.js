@@ -189,3 +189,50 @@ export async function getSensorData(_sessionID, contracts, _companyID) {
     }
     return
 }
+
+
+// get the index of the chain for the company by retrieving the data of the events from the chains,
+// only in case of the first handoff transaction and the end session. 
+export async function getIndexThroughChains(_sessionID, contracts, _companyID) {
+    var exitLoop = false
+    var i = 0
+    while (!exitLoop) {
+        // search for start of session transaction
+        var startIndex = await contracts[i].getPastEvents('StartOfSession', {
+                                                        filter: {sessionID: _sessionID},
+                                                        fromBlock: 'earliest',
+                                                        toBlock: 'latest'})
+                                        .then(function(events) {
+                                            if (events[0].companyID === _companyID) {
+                                                console.log("Found Here start session at " + i)
+                                                return i
+                                            }else {
+                                                return "Not Found Here"
+                                            }
+                                        })
+        if (startIndex != "Not Found Here") {
+            return startIndex
+        }
+
+        // search for handoff transaction
+        var handoffIndex = await contracts[i].getPastEvents('Handoff', {
+                                                        filter: {sessionID: _sessionID},
+                                                        fromBlock: 'earliest',
+                                                        toBlock: 'latest'})
+                                            .then(function(events) {
+                                            if (events[0].companyID === _companyID) {
+                                                console.log("Found Here handoff at " + i)
+                                                return i
+                                            }else {
+                                                return "Not Found Here"
+                                            }
+                                            })
+        
+        if (i < contracts.length) {
+            i++
+        } else {
+            exitLoop = true
+        }
+    }
+    return
+} 
