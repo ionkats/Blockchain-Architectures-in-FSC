@@ -65,7 +65,7 @@ for( var i=0; i < numberOfServers; i++) {
 
 // listen to all events from all the servers
 async function listenAllEvents() {
-    for ( var i = 0; i < smartContractAddresses.length; i++) {
+    for ( var i = 0; i < numberOfServers; i++) {
         var smartContract = smartContractObjects[i]
         smartContract.events.StartOfSession(specifiedEventHandler(startSessionEvent))
         smartContract.events.Handoff(specifiedEventHandler(handoffEvent))
@@ -87,7 +87,7 @@ function specifiedEventHandler(handler) {
 
 
 async function startSessionEvent(values) {
-    var chainNumber = IDToChainNumber(Number(values.userID))
+    var chainNumber = chainToCompanies[values.companyID]
     activeSessionsPerChain[chainNumber] += 1
     currentSession++;
     activeSessions.push(currentSession)
@@ -98,11 +98,11 @@ async function startSessionEvent(values) {
 async function handoffEvent(values) {
     values["nameOfEvent"] = "handoff"
     if (firstHandoff[values.sessionID]) {
-        var previousChainNumber = IDToChainNumber(Number(values.previousUserID))
+        var previousChainNumber = values.previousChainNumber
         activeSessionsPerChain[previousChainNumber] -= 1
         firstHandoff[values.sessionID] = false
     } else {
-        var newChainNumber = IDToChainNumber(Number(values.newUserID))
+        var newChainNumber = chainToCompanies[values.newCompanyID]
         activeSessionsPerChain[newChainNumber] += 1
         firstHandoff[values.sessionID] = true
     }
@@ -110,7 +110,7 @@ async function handoffEvent(values) {
 
 
 async function endSessionEvent(values) { 
-    var chainNumber = IDToChainNumber(Number(values.userID))
+    var chainNumber = await getIndexThroughChains(values.sessionID, smartContractObjects, values.companyID)
     activeSessionsPerChain[chainNumber] -= 1
     const index = activeSessions.indexOf(values.sessionID);
     if (index > -1) {
@@ -208,10 +208,11 @@ async function handOffTransaction() {
     var previousCompanyID = sessionToCompanyID[_sessionID]
 
     // the chain number from the previous companyID
-    var previousChainNumber = await getIndexThroughChains(_sessionID, smartContractObjects ,previousCompanyID)
+    var previousChainNumber = await getIndexThroughChains(_sessionID, smartContractObjects, previousCompanyID)
 
     // get the address and the smart contract object of the proper chain from the previous user
     var previousSmartContract = smartContractObjects[previousChainNumber]
+    console.log(previousChainNumber)
     var previousSenderAddress = userAddresses[previousChainNumber][0]
     try {
         // call the function from the smart contract for the previous user
@@ -313,7 +314,7 @@ async function endTransaction() {
 
 
 async function sensorTransaction(_sessionID) {
-    var information = String(Math.random(98) + 1) + " C"
+    var information = Number(random(0,50)) + " C"
     var chainNumber = sessionToChain[_sessionID]
     var companyID = sessionToCompanyID[_sessionID]
 
@@ -364,23 +365,37 @@ async function traceback() {
 }
 
 
+function sensorData() {
+    var sessionID = document.getElementById("SensorData-sessionId").value
+    var companyID = document.getElementById("SensorData-companyId").value
+
+    getSensorData(sessionID, smartContractObjects, companyID)
+
+    // reset values to the placeholder
+    document.getElementById("SensorData-sessionId").value = ""
+    document.getElementById("SensorData-companyId").value = ""
+}
+
+
 // I want a function f: [9] -> [#servers] => f(x) = floor[x / (10/#servers)] with a max amount of servers of 10           
 // e.g. for 2 servers f(4) = 4/5 = floor(0.8) = 0, f(5) = 1 => {0,1,2,3,4}->0, {5,6,7,8,9}->1
 //      for 3 servers f(3) = fl(3/3.33) = 0, f(4) = 4/3.33 = 1, f(7) = 7/3.33 = 2 => {0,1,2,3}->0, {4,5,6}->1, {7,8,9}->2
-function digitToServer(x) {
+export function digitToServer(x) {
     return (Math.floor((x) / (10/numberOfServers)))
 }
 
 
 // get the first digit of the id number
-function getFirstDigit(id) {
+export function getFirstDigit(id) {
     return (Number(String(id).charAt(0)))
 }
 
 
 // hash the ID with keccak256 and get modulo the number of servers
 function hashAndModulo(x) {
-    var number = Number(keccak256(x)%numberOfServers)
+    var hash = keccak256(x)
+    var number = Number((hash[31] + hash[30]) % numberOfServers)
+    console.log("ID: " + x + " chain: " + number)
     return number
 }
 
@@ -390,8 +405,8 @@ function IDToChainNumber(companyID) {
     var chainFromCompID = chainToCompanies[companyID]
     var hasAlready = true
     if (chainFromCompID === undefined) {
-        chainFromCompID = digitToServer(getFirstDigit(companyID))
-        // chainFromCompID = hashAndModulo(companyID)
+        // chainFromCompID = digitToServer(getFirstDigit(companyID))
+        chainFromCompID = hashAndModulo(companyID)
         hasAlready = true
     } 
     if (deployed) {
@@ -497,16 +512,4 @@ async function decentLoadOnChain(web3_instance) {
                                                 })
     }
     return result
-}
-
-
-function sensorData() {
-    var sessionID = document.getElementById("SensorData-sessionId").value
-    var companyID = document.getElementById("SensorData-companyId").value
-
-    getSensorData(sessionID, smartContractObjects, companyID)
-
-    // reset values to the placeholder
-    document.getElementById("SensorData-sessionId").value = ""
-    document.getElementById("SensorData-companyId").value = ""
 }

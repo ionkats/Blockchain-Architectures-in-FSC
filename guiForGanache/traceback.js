@@ -196,22 +196,27 @@ export async function getSensorData(_sessionID, contracts, _companyID) {
 export async function getIndexThroughChains(_sessionID, contracts, _companyID) {
     var exitLoop = false
     var i = 0
+    var specificEvents = []
+    var gotHandoff = false
     while (!exitLoop) {
         // search for start of session transaction
-        var startIndex = await contracts[i].getPastEvents('StartOfSession', {
-                                                        filter: {sessionID: _sessionID},
-                                                        fromBlock: 'earliest',
-                                                        toBlock: 'latest'})
-                                        .then(function(events) {
-                                            if (events[0].companyID === _companyID) {
-                                                console.log("Found Here start session at " + i)
-                                                return i
-                                            }else {
+        if (!gotHandoff) {
+            var startIndex = await contracts[i].getPastEvents('StartOfSession', {
+                                                            filter: {sessionID: _sessionID},
+                                                            fromBlock: 'earliest',
+                                                            toBlock: 'latest'})
+                                            .then(function(events) {
+                                                if (events.length != 0) {
+                                                    if (Number(events[0].returnValues.companyID) === _companyID) {
+                                                        // console.log("Found Here start session at " + i)
+                                                        return i
+                                                    }
+                                                } 
                                                 return "Not Found Here"
-                                            }
-                                        })
-        if (startIndex != "Not Found Here") {
-            return startIndex
+                                            })
+            if (startIndex != "Not Found Here") {
+                return startIndex
+            }
         }
 
         // search for handoff transaction
@@ -220,19 +225,31 @@ export async function getIndexThroughChains(_sessionID, contracts, _companyID) {
                                                         fromBlock: 'earliest',
                                                         toBlock: 'latest'})
                                             .then(function(events) {
-                                            if (events[0].companyID === _companyID) {
-                                                console.log("Found Here handoff at " + i)
-                                                return i
-                                            }else {
-                                                return "Not Found Here"
-                                            }
+                                                console.log(events)
+                                                for (var j = 0; j < events.length; j++) {
+                                                    if (Number(events[j].returnValues.newCompanyID) === _companyID) {
+                                                        specificEvents.push([events[j], i])
+                                                        gotHandoff = true
+                                                        // console.log("Found a handoff at " + i)
+                                                    }
+                                                }
+                                                return "No"
                                             })
-        
-        if (i < contracts.length) {
-            i++
-        } else {
-            exitLoop = true
-        }
+        (i + 1 < contracts.length) ? i++ : exitLoop = true
     }
-    return
+
+    console.log(specificEvents)
+    if (specificEvents.length >= 2) {
+        var maxTime = Number(specificEvents[0][0].returnValues.time)
+        var index = 0
+        for (var k = 1; k < specificEvents.length; k++) {
+            if (Number(specificEvents[k][0].returnValues.time) > maxTime) {
+                maxTime = Number(specificEvents[k][0].returnValues.time)
+                index = k
+            }
+        }
+        return index
+    } else {
+        throw new Error("Problem at getting index through chains function.")
+    }
 } 
