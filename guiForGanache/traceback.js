@@ -225,7 +225,6 @@ export async function getIndexThroughChains(_sessionID, contracts, _companyID) {
                                                         fromBlock: 'earliest',
                                                         toBlock: 'latest'})
                                             .then(function(events) {
-                                                console.log(events)
                                                 for (var j = 0; j < events.length; j++) {
                                                     if (Number(events[j].returnValues.newCompanyID) === _companyID) {
                                                         specificEvents.push([events[j], i])
@@ -235,21 +234,26 @@ export async function getIndexThroughChains(_sessionID, contracts, _companyID) {
                                                 }
                                                 return "No"
                                             })
-        (i + 1 < contracts.length) ? i++ : exitLoop = true
+        if ((i + 1) < contracts.length) {
+            i++ 
+        } else {
+            exitLoop = true
+        } 
     }
 
-    console.log(specificEvents)
     if (specificEvents.length >= 2) {
         var maxTime = Number(specificEvents[0][0].returnValues.time)
         var index = 0
         for (var k = 1; k < specificEvents.length; k++) {
             if (Number(specificEvents[k][0].returnValues.time) > maxTime) {
                 maxTime = Number(specificEvents[k][0].returnValues.time)
-                index = k
+                index = specificEvents[k][1]
             }
         }
         return index
     } else {
-        throw new Error("Problem at getting index through chains function.")
+        console.log("Haven't found an event for this session an all the chains. ")
+        return 0
+        // throw new Error("Problem at getting index through chains function.")
     }
 } 

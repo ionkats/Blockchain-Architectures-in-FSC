@@ -65,7 +65,7 @@ for( var i=0; i < numberOfServers; i++) {
 
 // listen to all events from all the servers
 async function listenAllEvents() {
-    for ( var i = 0; i < numberOfServers; i++) {
+    for ( var i = 0; i < smartContractObjects.length; i++) {
         var smartContract = smartContractObjects[i]
         smartContract.events.StartOfSession(specifiedEventHandler(startSessionEvent))
         smartContract.events.Handoff(specifiedEventHandler(handoffEvent))
@@ -87,7 +87,7 @@ function specifiedEventHandler(handler) {
 
 
 async function startSessionEvent(values) {
-    var chainNumber = chainToCompanies[values.companyID]
+    var chainNumber = chainToCompanies[Number(values.companyID)]
     activeSessionsPerChain[chainNumber] += 1
     currentSession++;
     activeSessions.push(currentSession)
@@ -97,22 +97,22 @@ async function startSessionEvent(values) {
  // this event will be called twice in every handoff, and will save 2 different chain values on each one.
 async function handoffEvent(values) {
     values["nameOfEvent"] = "handoff"
-    if (firstHandoff[values.sessionID]) {
-        var previousChainNumber = values.previousChainNumber
+    if (firstHandoff[Number(values.sessionID)]) {
+        var previousChainNumber = Number(values.previousChainNumber)
         activeSessionsPerChain[previousChainNumber] -= 1
-        firstHandoff[values.sessionID] = false
+        firstHandoff[Number(values.sessionID)] = true
     } else {
-        var newChainNumber = chainToCompanies[values.newCompanyID]
+        var newChainNumber = chainToCompanies[Number(values.newCompanyID)]
         activeSessionsPerChain[newChainNumber] += 1
-        firstHandoff[values.sessionID] = true
+        firstHandoff[Number(values.sessionID)] = false
     }
 }
 
 
 async function endSessionEvent(values) { 
-    var chainNumber = await getIndexThroughChains(values.sessionID, smartContractObjects, values.companyID)
+    var chainNumber = await getIndexThroughChains(Number(values.sessionID), smartContractObjects, Number(values.companyID))
     activeSessionsPerChain[chainNumber] -= 1
-    const index = activeSessions.indexOf(values.sessionID);
+    const index = activeSessions.indexOf(Number(values.sessionID));
     if (index > -1) {
         activeSessions.splice(index, 1);
     }
@@ -168,12 +168,13 @@ async function startTransaction() {
                                                     sessionToChain[_sessionID] = chainNumber // save the number of the chain saved last
                                                     // initialize the sensors for this session
                                                     initializeSensors(_sessionID)
-                                                    firstHandoff[_sessionID] = true
+                                                    firstHandoff[Number(_sessionID)] = false
                                                     // webInstance.eth.getTransactionReceipt(receipt.transactionHash).then(console.log)
                                                 })
     } catch (e) {
         console.error(e)
-        alert(e.message)
+        console.log("Start Session Transaction reverted.")
+        // alert(e.message)
     }
 }
 
@@ -185,7 +186,7 @@ async function handOffTransaction() {
         return
     } 
     var _sessionID = document.getElementById("Handoff-sessionId").value
-    if (!firstHandoff[_sessionID]) {
+    if (firstHandoff[Number(_sessionID)]) {
         console.log("The second handoff transaction hasn't been mined yet, try again for handing off this session.")
         document.getElementById("Handoff-sessionId").value = ""
         return
@@ -212,7 +213,6 @@ async function handOffTransaction() {
 
     // get the address and the smart contract object of the proper chain from the previous user
     var previousSmartContract = smartContractObjects[previousChainNumber]
-    console.log(previousChainNumber)
     var previousSenderAddress = userAddresses[previousChainNumber][0]
     try {
         // call the function from the smart contract for the previous user
@@ -226,7 +226,7 @@ async function handOffTransaction() {
                                                 previousChainNumber // save the index of the previous chain
                                                 ).send({from: previousSenderAddress})
                                                 .on('receipt', function(receipt) {
-                                                    console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous User (" + previousUserID + ") to chain index" + previousChainNumber + ")")
+                                                    console.log("Session "+ _sessionID + " Handed off. (TX saved to the previous ID (" + previousCompanyID + ") to chain index " + previousChainNumber + ")")
                                                     previousTransactionHash = receipt.transactionHash
                                                     sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
                                                     // stop the logging of sensors for this session
@@ -260,7 +260,8 @@ async function handOffTransaction() {
                                                             })
     } catch (e) {
         console.error(e)
-        alert(e.message)
+        console.log("Handoff Transaction reverted.")
+        // alert(e.message)
     }
 
     // reset the value to the placeholder
@@ -275,7 +276,7 @@ async function endTransaction() {
     }
     var _sessionID = document.getElementById("endSession-sessionId").value
 
-    if (!firstHandoff[_sessionID]) {
+    if (firstHandoff[Number(_sessionID)]) {
         console.log("The second handoff transaction hasn't been mined yet, try again for ending this session.")
         document.getElementById("endSession-sessionId").value = ""
         return
@@ -306,7 +307,8 @@ async function endTransaction() {
                                             })
     } catch (e) {
         console.error(e)
-        alert(e.message)
+        console.log("End Session Transaction reverted.")
+        // alert(e.message)
     }
     // reset value to the placeholder
     document.getElementById("endSession-sessionId").value = ""
@@ -331,7 +333,8 @@ async function sensorTransaction(_sessionID) {
                                                     .send({from: senderAddress})
     } catch (e) {
         console.error(e)
-        alert(e.message)
+        console.log("Sensor Transaction reverted.")
+        // alert(e.message)
     }
 }
 
@@ -395,7 +398,7 @@ export function getFirstDigit(id) {
 function hashAndModulo(x) {
     var hash = keccak256(x)
     var number = Number((hash[31] + hash[30]) % numberOfServers)
-    console.log("ID: " + x + " chain: " + number)
+    // console.log("ID: " + x + " chain: " + number)
     return number
 }
 
