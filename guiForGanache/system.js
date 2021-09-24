@@ -1,11 +1,12 @@
 import { initialize } from "./initializer.js"
 import { initializeWithoutData } from "./initializerWithoutData.js"
-import { createNewServer } from "./initializerWithoutData.js"
 import { random } from "./initializerWithoutData.js"
 import { tracebackThroughBlockChain } from "./traceback.js"
 import { searchForEndSession } from "./traceback.js"
 import { getSensorData } from "./traceback.js"
 import { getIndexThroughChains } from "./traceback.js"
+import { getChainIndex } from "./chainManager.js"
+import { initializeManager } from "./chainManager.js"
 
 // uncomment to initialize the servers and get the addresses of already deployed contracts 
 
@@ -28,6 +29,7 @@ setTimeout(function () {
 
 
 // put the address of the deployed smart contracts here
+initializeManager(data)
 var userAddresses = data[0]
 var smartContractObjects = data[1]
 var smartContractAddresses = data[2]
@@ -43,7 +45,7 @@ const handoffButton = document.getElementById("Handoff-button")
 const tracebackButton = document.getElementById("Traceback-button")
 const sensorButton = document.getElementById("SensorData-button")
 
-const GASLIMIT = 15000000
+
 var activeSessionsPerChain = {}
 var activeSessions = []
 var currentSession = 0
@@ -143,12 +145,26 @@ async function startTransaction() {
     // creates a random 6-digits number of companyID
     var companyID = createRandomID()
 
-    // the the chain number from the userID
-    var chainNumber = await getChainIndex(companyID)
-    if (chainNumber === undefined || !deployed) {
-        console.log("Not proceeding in activating any sessions")
-        return
+    // get the chain number from the manager
+    var chainNumber
+    try {
+        chainNumber = await connectWithLoadBalancer(companyID, chainToCompanies, currentSession, activeSessions, portsUsed)
+        if (chainNumber === undefined) {
+            return
+        }
+        chainToCompanies[companyID] = chainNumber
+    } catch(e) {
+        console.log(e)
+        console.log("Error from manager, proceeding with last determined chain value for this company.")
+        if (chainToCompanies[companyID] === undefined) {
+            chainNumber = hashAndModulo(companyID)
+            chainToCompanies[companyID] = chainNumber
+        } else {
+            chainNumber = chainToCompanies[companyID]
+        }
     }
+    console.log(chainNumber)
+    console.log(typeof chainNumber)
     coverAllContracts(chainNumber)
 
     // get the address and the smart contract object of the proper chain
@@ -233,7 +249,23 @@ async function handOffTransaction() {
                                                     eval('clearInterval(window.session' + _sessionID + ')')
                                                 })
 
-        var newChainNumber = await getChainIndex(newCompanyID)
+        var newChainNumber 
+        // get the new chain number from the manager
+        try {
+            newChainNumber = await connectWithLoadBalancer(newCompanyID, chainToCompanies, currentSession, activeSessions, portsUsed)
+            if (newChainNumber === undefined) {
+                return
+            }
+            chainToCompanies[newCompanyID] = newChainNumber
+        } catch(e) {
+            console.log("Error from manager, proceeding with last determined chain value for this company.")
+            if (chainToCompanies[newCompanyID] === undefined) {
+                newChainNumber = hashAndModulo(newCompanyID)
+                chainToCompanies[newCompanyID] = newChainNumber
+            } else {
+                newChainNumber = chainToCompanies[newCompanyID]
+            }
+        }
 
         // get the address and the smart contract object of the proper chain from the new user
         var newSmartContract = smartContractObjects[newChainNumber]
@@ -380,45 +412,6 @@ function sensorData() {
 }
 
 
-// I want a function f: [9] -> [#servers] => f(x) = floor[x / (10/#servers)] with a max amount of servers of 10           
-// e.g. for 2 servers f(4) = 4/5 = floor(0.8) = 0, f(5) = 1 => {0,1,2,3,4}->0, {5,6,7,8,9}->1
-//      for 3 servers f(3) = fl(3/3.33) = 0, f(4) = 4/3.33 = 1, f(7) = 7/3.33 = 2 => {0,1,2,3}->0, {4,5,6}->1, {7,8,9}->2
-export function digitToServer(x) {
-    return (Math.floor((x) / (10/numberOfServers)))
-}
-
-
-// get the first digit of the id number
-export function getFirstDigit(id) {
-    return (Number(String(id).charAt(0)))
-}
-
-
-// hash the ID with keccak256 and get modulo the number of servers
-function hashAndModulo(x) {
-    var hash = keccak256(x)
-    var number = Number((hash[31] + hash[30]) % numberOfServers)
-    // console.log("ID: " + x + " chain: " + number)
-    return number
-}
-
-
-// get the first digit of the userID and match it to a number from 0 to numberOfServers
-function IDToChainNumber(companyID) {
-    var chainFromCompID = chainToCompanies[companyID]
-    var hasAlready = true
-    if (chainFromCompID === undefined) {
-        // chainFromCompID = digitToServer(getFirstDigit(companyID))
-        chainFromCompID = hashAndModulo(companyID)
-        hasAlready = true
-    } 
-    if (deployed) {
-        chainToCompanies[companyID] = chainFromCompID 
-    }
-    return chainFromCompID
-}
-
-
 // activate the session on all contracts, for avoiding future errors on revert of transactions due to inactive session (eg handoff to different chain)
 function coverAllContracts(chainNumber) {
     for (var i = 0; i < numberOfServers; i++) {
@@ -434,85 +427,29 @@ function coverAllContracts(chainNumber) {
 }
 
 
-// get the chain number of this company by checking the load on the chain assigned to it
-async function getChainIndex(companyID) {
-    var validLoadNotFound = false
-    var currentChain = IDToChainNumber(companyID)
-    var _web3 = web3Instances[currentChain]
-    
-    // check the load on the chain assigned to the user
-    var firstResult = await decentLoadOnChain(_web3).then(function (result) {
-                                        if (result) {
-                                            // console.log("got in")
-                                        }
-                                        return result
-                                    })    
-    if (firstResult) {
-        return currentChain
-    }
+// hash the ID with keccak256 and get modulo the number of servers
+export function hashAndModulo(x) {
+    var hash = keccak256(x)
+    var number = Number((hash[31]) % numberOfServers)
+    // console.log("ID: " + x + " chain: " + number)
+    return number
+}
 
-    // check the load on the rest of the active chains, return the first valid
-    var chain = 0
-    while (true) {
-        if (chain >= numberOfServers) {
-            validLoadNotFound = true
-            break
-        } else if (chain != currentChain) {
-            var currentResult = await decentLoadOnChain(web3Instances[chain]).then(function (result) {
-                                                                                        if (result) {
-                                                                                            console.log("Company with ID " + companyID + " moved to chain " + chain)
-                                                                                            chainToCompanies[companyID] = chain
-                                                                                        }
-                                                                                        return result
-                                                                                    }) 
-            if (currentResult) {
-                return chain
-            }
-        }
-        chain += 1
-    }
 
-    if (validLoadNotFound) {
-        var validPort = false
-        deployed = false
-        while (!validPort) {
-            var port = window.prompt("You have to create a new server, everything is almost fully loaded. Insert a not used port of a new server.")
-            validPort = !portsUsed.includes(port)
-            if (port === undefined) {
-                validPort = false
-            }
-        }
-        var items = await createNewServer(port, currentSession, activeSessions)
-        
-        setTimeout(function () {
-            deployed = true
-        }, 16000) // wait for 16 seconds for the contracts to be surely deployed (block every 15s)
-        
+async function connectWithLoadBalancer(companyID, chainToCompanies, currentSession, activeSessions, portsUsed) {
+    var chainNumber = await getChainIndex(companyID, chainToCompanies, currentSession, activeSessions, portsUsed, deployed)
+    if (chainNumber.length === 5) {
+        // a new chain is activated
+        var items = chainNumber
         smartContractAddresses.push(items[0])
         smartContractObjects.push(items[1])
         web3Instances.push(items[2])
         userAddresses.push(items[3])
+        portsUsed.push(items[4])
         numberOfServers++
-        // alert("Need to create new server.")
-        return
-    } else {
-        alert("An error at the getChainIndex function, needs debugging. Sorry for the inconvenience")
-        return
+        console.log("A new server was created.")
+        return numberOfServers - 1
     }
-}
 
-
-// check if over 85% of gas is used on the last 5 blocks
-async function decentLoadOnChain(web3_instance) {
-    var result = true
-    var blockNumber = await web3_instance.eth.getBlock("latest")
-    for (var i=0; i < 5; i++) {
-        var blockData = await web3_instance.eth.getBlock(blockNumber.number - i)
-                                                .then(function (block) {
-                                                    if (block.gasUsed > 0.85*GASLIMIT) {
-                                                        result = false
-                                                    }
-                                                })
-    }
-    return result
+    return chainNumber
 }
