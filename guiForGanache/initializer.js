@@ -1,13 +1,13 @@
-import contractABI from "./ABI.js"
+import contractABI from "./ABIStage.js"
 
 // deployment of the contracts for every web3 provider needed from the Remix environment
 
 // data for server 0
-var contract0 = "0x255DC27dE77d0ee7Ffc1645c8Ab87Aa024D13fb4"
+var contract0 = ""
 // data for server 1
-var contract1 = "0x441136332FB9cE441D5527E1CB7eae6A63cED03b"
+var contract1 = ""
 // data for server 2
-var contract2 = "0xEf5Ee6bff03Db5288cc7a75b3A2928D944Fc55C4"
+var contract2 = ""
 // data for server 3
 var contract3 = ""
 // data for server 4

@@ -56,11 +56,12 @@ var sessionToChain = {}
 var firstHandoff = {}
 var chainToCompanies = {} // the userID that change chains are saved here
 var portsUsed = []
+var indexOfNewServers = []
 
 
 // initialize the active sessions per chain
 for( var i=0; i < numberOfServers; i++) {
-    activeSessionsPerChain[i] = 0
+    // activeSessionsPerChain[i] = 0
     portsUsed.push('854' + i)
 }
 
@@ -89,47 +90,52 @@ function specifiedEventHandler(handler) {
 
 
 async function startSessionEvent(values) {
-    var chainNumber = chainToCompanies[Number(values.companyID)]
-    activeSessionsPerChain[chainNumber] += 1
-    currentSession++;
-    activeSessions.push(currentSession)
+    // var chainNumber = chainToCompanies[Number(values.companyID)]
+    // activeSessionsPerChain[chainNumber] += 1
+    // activeSessions.push(currentSession)
 }
 
 
  // this event will be called twice in every handoff, and will save 2 different chain values on each one.
 async function handoffEvent(values) {
-    values["nameOfEvent"] = "handoff"
+    // values["nameOfEvent"] = "handoff"
     if (firstHandoff[Number(values.sessionID)]) {
-        var previousChainNumber = Number(values.previousChainNumber)
-        activeSessionsPerChain[previousChainNumber] -= 1
+        // var previousChainNumber = Number(values.previousChainNumber)
+        // activeSessionsPerChain[previousChainNumber] -= 1
         firstHandoff[Number(values.sessionID)] = true
     } else {
-        var newChainNumber = chainToCompanies[Number(values.newCompanyID)]
-        activeSessionsPerChain[newChainNumber] += 1
+        // var newChainNumber = chainToCompanies[Number(values.newCompanyID)]
+        // activeSessionsPerChain[newChainNumber] += 1
         firstHandoff[Number(values.sessionID)] = false
     }
 }
 
 
 async function endSessionEvent(values) { 
-    var chainNumber = await getIndexThroughChains(Number(values.sessionID), smartContractObjects, Number(values.companyID))
-    activeSessionsPerChain[chainNumber] -= 1
-    const index = activeSessions.indexOf(Number(values.sessionID));
-    if (index > -1) {
-        activeSessions.splice(index, 1);
-    }
+    // var chainNumber = await getIndexThroughChains(Number(values.sessionID), smartContractObjects, Number(values.companyID))
+    // activeSessionsPerChain[chainNumber] -= 1
+    // const index = activeSessions.indexOf(Number(values.sessionID));
+    // if (index > -1) {
+    //     activeSessions.splice(index, 1);
+    // }
 }
 
 
 function addUiListeners() {
     // specified transactions
-    startSessionButton.addEventListener("click", startTransaction)
+    startSessionButton.addEventListener("click", startTransaction)  // oneClick)
     endSessionButton.addEventListener("click", endTransaction)
     handoffButton.addEventListener("click", handOffTransaction)
     tracebackButton.addEventListener("click", traceback)
     sensorButton.addEventListener("click", sensorData)
 }
 addUiListeners()
+
+function oneClick() {
+    for (var i=0; i <= 50; i++) {
+        startTransaction()
+    }
+}
 
 
 // called when the start new session button is pressed initializes the new sessionID available and 
@@ -148,7 +154,7 @@ async function startTransaction() {
     // get the chain number from the manager
     var chainNumber
     try {
-        chainNumber = await connectWithLoadBalancer(companyID, chainToCompanies, currentSession, activeSessions, portsUsed)
+        chainNumber = await connectWithLoadBalancer(companyID, chainToCompanies, currentSession, portsUsed)
         if (chainNumber === undefined) {
             return
         }
@@ -163,8 +169,6 @@ async function startTransaction() {
             chainNumber = chainToCompanies[companyID]
         }
     }
-    console.log(chainNumber)
-    console.log(typeof chainNumber)
     coverAllContracts(chainNumber)
 
     // get the address and the smart contract object of the proper chain
@@ -175,22 +179,20 @@ async function startTransaction() {
         var startTransactionObject = smartContract.methods.startSession(companyID, userID)
                                                 .send({from: senderAddress})
                                                 .then(function(receipt){ // called on event
-                                                    // console.log(receipt)
                                                     var _sessionID = receipt.events.StartOfSession.returnValues.sessionID
                                                     console.log("Session "+ _sessionID + " Activated to chain index: " + chainNumber + " from ID: " + companyID)
                                                     sessionToCompanyID[_sessionID] = companyID
                                                     sessionToUserID[_sessionID] = userID
                                                     sessionToTransactionHash[_sessionID] = receipt.transactionHash
                                                     sessionToChain[_sessionID] = chainNumber // save the number of the chain saved last
+                                                    currentSession++
                                                     // initialize the sensors for this session
                                                     initializeSensors(_sessionID)
                                                     firstHandoff[Number(_sessionID)] = false
-                                                    // webInstance.eth.getTransactionReceipt(receipt.transactionHash).then(console.log)
                                                 })
     } catch (e) {
-        console.error(e)
+        console.log(e)
         console.log("Start Session Transaction reverted.")
-        // alert(e.message)
     }
 }
 
@@ -252,12 +254,14 @@ async function handOffTransaction() {
         var newChainNumber 
         // get the new chain number from the manager
         try {
-            newChainNumber = await connectWithLoadBalancer(newCompanyID, chainToCompanies, currentSession, activeSessions, portsUsed)
+            newChainNumber = await connectWithLoadBalancer(newCompanyID, chainToCompanies, currentSession, portsUsed)
             if (newChainNumber === undefined) {
                 return
             }
             chainToCompanies[newCompanyID] = newChainNumber
+            await checkAndActivateSession(newChainNumber, _sessionID)
         } catch(e) {
+            console.log(e)
             console.log("Error from manager, proceeding with last determined chain value for this company.")
             if (chainToCompanies[newCompanyID] === undefined) {
                 newChainNumber = hashAndModulo(newCompanyID)
@@ -291,9 +295,8 @@ async function handOffTransaction() {
                                                                 initializeSensors(_sessionID)
                                                             })
     } catch (e) {
-        console.error(e)
+        console.log(e)
         console.log("Handoff Transaction reverted.")
-        // alert(e.message)
     }
 
     // reset the value to the placeholder
@@ -328,7 +331,6 @@ async function endTransaction() {
     try {
         // stop the logging of sensors for this session
         eval('clearInterval(window.session' + _sessionID + ')')
-        // console.log("interval session" + _sessionID + " cleared.")
 
         // call the function from the smart contract
         var endTransactionObject = smartContract.methods.endSession(_sessionID, companyID, userID, previousTransactionHash)
@@ -338,9 +340,8 @@ async function endTransaction() {
                                                 sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
                                             })
     } catch (e) {
-        console.error(e)
+        console.log(e)
         console.log("End Session Transaction reverted.")
-        // alert(e.message)
     }
     // reset value to the placeholder
     document.getElementById("endSession-sessionId").value = ""
@@ -364,9 +365,8 @@ async function sensorTransaction(_sessionID) {
                                                     information)
                                                     .send({from: senderAddress})
     } catch (e) {
-        console.error(e)
+        console.log(e)
         console.log("Sensor Transaction reverted.")
-        // alert(e.message)
     }
 }
 
@@ -377,15 +377,14 @@ function createRandomID() {
 
 
 async function initializeSensors(_sessionID) {
-    // repeat the interval session1, session2, etc very 5000milsec = 5sec.
+    // repeat the interval session1, session2, etc very 60000milsec = 60sec.
     // window.variableName saves a global variable with dynamic naming for clearing the interval from another function
-    eval('window.session' + _sessionID + ' = ' + setInterval(function() { sensorTransaction(_sessionID) }, 5000))
+    eval('window.session' + _sessionID + ' = ' + setInterval(function() { sensorTransaction(_sessionID) }, 60000))
 }
 
 
 async function traceback() {
     var sessionID = document.getElementById("Traceback-sessionId").value
-
     var result = await searchForEndSession(sessionID, smartContractObjects)
     if (result[1] === "") {
         console.log("The session hasn't ended yet")
@@ -436,20 +435,38 @@ export function hashAndModulo(x) {
 }
 
 
-async function connectWithLoadBalancer(companyID, chainToCompanies, currentSession, activeSessions, portsUsed) {
-    var chainNumber = await getChainIndex(companyID, chainToCompanies, currentSession, activeSessions, portsUsed, deployed)
+async function connectWithLoadBalancer(companyID, chainToCompanies, currentSession, portsUsed) {
+    var chainNumber = await getChainIndex(companyID, chainToCompanies, currentSession, portsUsed, deployed)
     if (chainNumber.length === 5) {
         // a new chain is activated
         var items = chainNumber
-        smartContractAddresses.push(items[0])
-        smartContractObjects.push(items[1])
-        web3Instances.push(items[2])
-        userAddresses.push(items[3])
+        // smartContractAddresses.push(items[0])
+        // smartContractObjects.push(items[1])
+        // web3Instances.push(items[2])
+        // userAddresses.push(items[3])
         portsUsed.push(items[4])
         numberOfServers++
         console.log("A new server was created.")
+        indexOfNewServers.push(numberOfServers - 1)
         return numberOfServers - 1
     }
-
     return chainNumber
+}
+
+
+// if a transaction of this session is to be sent on a new chain we need to make sure that it is active and save its activity.
+async function checkAndActivateSession(chainIndex, _sessionID) {
+    const index = indexOfNewServers.indexOf(chainIndex);
+    if (index > -1) {
+        var oldSmartContract = smartContractObjects[0]
+        var oldActive = await oldSmartContract.methods.isActive(_sessionID).call()
+
+        var newSmartContract = smartContractObjects[chainIndex]
+        var newActive = await newSmartContract.methods.isActive(_sessionID).call()
+
+        if ((oldActive === true) && (newActive === false)) {
+            var activateTransaction = await newSmartContract.methods.activateSession(_sessionID)
+                                                              .send({from: userAddresses[chainIndex][0]})
+        }
+    }
 }

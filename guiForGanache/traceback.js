@@ -145,15 +145,16 @@ export async function searchForEndSession(_sessionID, contracts) {
                                             } else if (events.length > 1) {
                                                 console.log("Found more that one events.")
                                                 console.log(events)
-                                                return ["", true]
                                             }
                                             if (i < (contracts.length - 1)) {
                                                 console.log("End of session not found on chain " + i + ".")
-                                                i += 1
+                                                i++
+                                                return ["", false]
                                             } else {
-                                                // console.log("Filtering did not work, maybe the session hasn't ended.")
-                                                return ["", true] //for exiting the loop
+                                                console.log("Filtering did not work, maybe the session hasn't ended.")
                                             }
+                                            //for exiting the loop 
+                                            return ["", true]
                                         })
         exitLoop = events[1]
     }
