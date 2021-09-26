@@ -1,6 +1,6 @@
 pragma solidity ^0.8.3;
 
-contract StateAndSession {
+contract NewChainStage {
 
     event StartOfSession(
         uint256 indexed sessionID,
@@ -38,10 +38,7 @@ contract StateAndSession {
     mapping(uint256 => bool) public activeSessions;
     uint256 public sessionID;
 
-    constructor(uint256 startingSession, uint256[] memory listOfActiveSessions) {
-        for (uint i=0; i<listOfActiveSessions.length; i++) {
-            activeSessions[listOfActiveSessions[i]] = true;
-        }
+    constructor(uint256 startingSession) {
         sessionID = startingSession;
     }
 
@@ -107,4 +104,11 @@ contract StateAndSession {
         activeSessions[_sessionID] = false;
     }
 
+    function activateSession(uint256 _sessionID) public {
+        activeSessions[_sessionID] = true;
+    }
+
+    function isActive(uint256 _sessionID) public view returns (bool){
+        return activeSessions[_sessionID];
+    }
 }

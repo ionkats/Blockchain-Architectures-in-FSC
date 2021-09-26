@@ -1,21 +1,5 @@
 export default [
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "startingSession",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256[]",
-				"name": "listOfActiveSessions",
-				"type": "uint256[]"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -270,6 +254,25 @@ export default [
 		"name": "handoff",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_sessionID",
+				"type": "uint256"
+			}
+		],
+		"name": "isActive",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
