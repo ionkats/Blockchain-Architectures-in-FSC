@@ -428,8 +428,8 @@ function coverAllContracts(chainNumber) {
 
 // hash the ID with keccak256 and get modulo the number of servers
 export function hashAndModulo(x) {
-    var hash = keccak256(x)
-    var number = Number((hash[31]) % numberOfServers)
+    var hash = keccak256(x).toString('hex')
+    var number = Number(parseInt(hash,16) % numberOfServers)
     // console.log("ID: " + x + " chain: " + number)
     return number
 }
