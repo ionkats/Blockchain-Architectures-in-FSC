@@ -1,4 +1,4 @@
-import contractABI from "./ABIStage.js"
+import contractABI from "../smartContracts/ABIStage.js"
 
 // deployment of the contracts for every web3 provider needed from the Remix environment
 
