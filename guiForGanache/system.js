@@ -131,8 +131,10 @@ function addUiListeners() {
 }
 addUiListeners()
 
+var timeDict = {}
+
 function oneClick() {
-    for (var i=0; i <= 50; i++) {
+    for (var i=0; i < 100; i++) {
         startTransaction()
     }
 }
@@ -189,6 +191,7 @@ async function startTransaction() {
                                                     // initialize the sensors for this session
                                                     initializeSensors(_sessionID)
                                                     firstHandoff[Number(_sessionID)] = false
+                                                    timeDict[_sessionID] = parseInt(performance.now())
                                                 })
     } catch (e) {
         console.log(e)
@@ -338,6 +341,8 @@ async function endTransaction() {
                                             .on('receipt', function(receipt) {
                                                 console.log("Session "+ _sessionID + " Ended to chain index: " + chainNumber + " from ID: " + companyID)
                                                 sessionToTransactionHash[_sessionID] = receipt.transactionHash // update the last transaction hash
+                                                timeDict[_sessionID - 1] = parseInt(performance.now()) - timeDict[_sessionID - 1]
+                                                // console.log("Took " + timeDict[_sessionID - 1] + " miliseconds.")
                                             })
     } catch (e) {
         console.log(e)
@@ -396,6 +401,8 @@ async function traceback() {
 
     // reset value to the placeholder
     document.getElementById("Traceback-sessionId").value = ""
+
+    // timingCalculations()
 }
 
 
@@ -429,7 +436,7 @@ function coverAllContracts(chainNumber) {
 // hash the ID with keccak256 and get modulo the number of servers
 export function hashAndModulo(x) {
     var hash = keccak256(x).toString('hex')
-    var number = Number(parseInt(hash,16) % numberOfServers)
+    var number = Number(String(parseInt(hash,16)).charAt(0)) % numberOfServers
     // console.log("ID: " + x + " chain: " + number)
     return number
 }
@@ -440,10 +447,6 @@ async function connectWithLoadBalancer(companyID, chainToCompanies, currentSessi
     if (chainNumber.length === 5) {
         // a new chain is activated
         var items = chainNumber
-        // smartContractAddresses.push(items[0])
-        // smartContractObjects.push(items[1])
-        // web3Instances.push(items[2])
-        // userAddresses.push(items[3])
         portsUsed.push(items[4])
         numberOfServers++
         console.log("A new server was created.")
@@ -469,4 +472,23 @@ async function checkAndActivateSession(chainIndex, _sessionID) {
                                                               .send({from: userAddresses[chainIndex][0]})
         }
     }
+}
+
+
+function timingCalculations() {
+    console.log(timeDict)
+    var min = 999999999999999999
+    var max = 0
+    var sum = 0
+    for (var key in timeDict) {
+        if (timeDict[key] < min) {
+            min = timeDict[key]
+        }
+        if (timeDict[key] > max) { 
+            max = timeDict[key]
+        }
+        sum += timeDict[key]
+    }
+    console.log(activeSessionsPerChain)
+    console.log("Maximum: " + max + ", Minimum: " + min + ", Average: " + sum/500)
 }
