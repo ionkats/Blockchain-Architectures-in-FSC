@@ -6,7 +6,7 @@ var smartContractObjectsCM
 var smartContractAddressesCM
 var web3InstancesCM
 var numberOfServersCM
-const GASLIMIT = 15000000
+const GASLIMIT = 10000000
 var chainCheckedTime = {}
 
 
@@ -103,15 +103,21 @@ export async function getChainIndex(companyID, chainToCompanies, currentSession,
 
 // check if over 85% of gas is used on the last 5 blocks
 async function decentLoadOnChain(web3_instance) {
-    var result = true
+    var result = false
     var blockNumber = await web3_instance.eth.getBlock("latest")
-    for (var i=0; i < 2; i++) {
+    for (var i=0; i < 5; i++) {
         var blockData = await web3_instance.eth.getBlock(blockNumber.number - i)
-                                                .then(function (block) {s
-                                                    if (block.gasUsed > 0.85*GASLIMIT) {
-                                                        result = false
+                                                .then(function (block) {
+                                                    if (block.gasUsed > 0.90*GASLIMIT) {
+                                                        result = (result || false)
+                                                    } else {
+                                                        result = true
+                                                        return true
                                                     }
                                                 })
+        if (blockData === true) {
+            break
+        }
     }
     return result
 }
