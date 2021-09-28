@@ -63,3 +63,52 @@ larger the amount of active sessions to a chain there is move user power to over
 should include this on the thesis. 
 
 
+Testing Data
+
+1 chain, 300 two stage session at the same time
+
+	Maximum: 184886, Minimum: 110644, Average: 168865.65333333332
+	Maximum: 192127, Minimum: 157261, Average: 177619.90666666668
+
+2 chains, 300 two stage sessions at the same time
+
+	Maximum: 147139, Minimum: 83904, Average: 122927.36
+	Maximum: 136105, Minimum: 92760, Average: 114088.56333333334
+
+3 chains, 300 two stage sessions at the same time
+
+	Maximum: 111850, Minimum: 82586, Average: 99011.78333333334
+	Maximum: 119393, Minimum: 84593, Average: 103985.13666666667
+
+4 chains, 300 two stage sessions at the same time
+
+	Maximum: 117581, Minimum: 72371, Average: 99006.42666666667
+	Maximum: 127082, Minimum: 74016, Average: 100592.51666666666
+
+5 chains, 300 two stage sessions at the same time
+
+	Maximum: 111572, Minimum: 76364, Average: 96171.03333333334
+	Maximum: 108431, Minimum: 74127, Average: 92472.27333333333
+
+//////////////////////////////////////////////////////////////////////////////////
+
+
+1 chain, 500 two stage session at the same time
+
+	Maximum: 314058, Minimum: 258982, Average: 288881.934
+
+2 chains, 500 two stage sessions at the same time
+
+	Maximum: 231983, Minimum: 138889, Average: 198321.764
+
+3 chains, 500 two stage sessions at the same time
+
+	Maximum: 201263, Minimum: 130155, Average: 165624.704
+
+4 chains, 500 two stage sessions at the same time
+
+	Maximum: 190758, Minimum: 123571, Average: 155523.7
+
+5 chains, 500 two stage sessions at the same time
+
+	Maximum: 180770, Minimum: 121206, Average: 151305.136
