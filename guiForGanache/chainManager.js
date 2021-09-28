@@ -7,6 +7,7 @@ var smartContractAddressesCM
 var web3InstancesCM
 var numberOfServersCM
 const GASLIMIT = 15000000
+var chainCheckedTime = {}
 
 
 export function initializeManager(data) {
@@ -39,12 +40,18 @@ export async function getChainIndex(companyID, chainToCompanies, currentSession,
     var validLoadNotFound = false
     var currentChain = IDToChainNumber(companyID, chainToCompanies, deployed)
     var _web3 = web3InstancesCM[currentChain]
-    
+
+    // if this chain is checked in less than 5 minutes don't check it again
+    if ((chainCheckedTime[currentChain] != undefined) && (parseInt(performance.now()) - chainCheckedTime[currentChain] < 300000)) {
+        return currentChain
+    }
+
     // check the load on the chain assigned to the user
     var firstResult = await decentLoadOnChain(_web3).then(function (result) {
                                                                 return result
                                                             })    
     if (firstResult) {
+        chainCheckedTime[currentChain] = parseInt(performance.now())
         return currentChain
     }
 
@@ -63,6 +70,7 @@ export async function getChainIndex(companyID, chainToCompanies, currentSession,
                                                                                         return result
                                                                                     }) 
             if (currentResult) {
+                chainCheckedTime[chain] = parseInt(performance.now())
                 return chain
             }
         }
@@ -83,10 +91,6 @@ export async function getChainIndex(companyID, chainToCompanies, currentSession,
         setTimeout(function () {
             deployed = true
         }, 16000) // wait for 16 seconds for the contracts to be surely deployed (block every 15s)
-        // smartContractAddressesCM.push(items[0])
-        // smartContractObjectsCM.push(items[1])
-        // web3InstancesCM.push(items[2])
-        // userAddressesCM.push(items[3])
         numberOfServersCM++
         items.push(port)
         return items
@@ -101,10 +105,9 @@ export async function getChainIndex(companyID, chainToCompanies, currentSession,
 async function decentLoadOnChain(web3_instance) {
     var result = true
     var blockNumber = await web3_instance.eth.getBlock("latest")
-    for (var i=0; i < 5; i++) {
+    for (var i=0; i < 2; i++) {
         var blockData = await web3_instance.eth.getBlock(blockNumber.number - i)
-                                                .then(function (block) {
-                                                    // console.log("Block number " + block.number + " has size " + block.size + " bytes.")
+                                                .then(function (block) {s
                                                     if (block.gasUsed > 0.85*GASLIMIT) {
                                                         result = false
                                                     }

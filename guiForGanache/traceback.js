@@ -199,6 +199,11 @@ export async function getIndexThroughChains(_sessionID, contracts, _companyID) {
     var i = 0
     var specificEvents = []
     var gotHandoff = false
+
+    if (contracts.length === 1) {
+        return 0
+    }
+
     while (!exitLoop) {
         // search for start of session transaction
         if (!gotHandoff) {
